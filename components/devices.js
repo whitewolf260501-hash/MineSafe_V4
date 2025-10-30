@@ -1,5 +1,5 @@
 // ================================================
-// userDashboard.js — Gestión de Usuario y Tipos de Mina
+// Devices.js — Gestión de Usuario y Tipos de Mina
 // ================================================
 
 import {
