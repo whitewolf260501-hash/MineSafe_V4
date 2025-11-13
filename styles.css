@@ -1,290 +1,706 @@
 /* ================================================
-   ESTILO ADMIN PANEL MINESAFE 2 — CLARO / OSCURO + EFECTO NEÓN + NAVBAR ACORDEÓN + BOTÓN VOLVER
+   MINESAFE V4 — CSS UNIFICADO (DASHBOARD + LOGIN)
    ================================================ */
 
-/* ------------------ VARIABLES DE COLOR ------------------ */
+/* ------------------ VARIABLES ------------------ */
 :root {
   --color-bg: #f8f9fa;
   --color-text: #111;
-  --color-text-alt: #ffeb3b;
   --color-card: #ffffff;
   --color-border: #ddd;
   --color-shadow: rgba(0, 0, 0, 0.1);
-  --color-primary: #007bff;
+  --color-primary: #3b82f6;
+  --color-accent: #6c63ff;
   --color-success: #28a745;
   --color-danger: #dc3545;
   --color-warning: #ffc107;
   --color-muted: #6c757d;
-  --color-hover: #00bfff;
-  --neon-glow: 0 0 10px rgba(0, 191, 255, 0.8),
-                0 0 20px rgba(0, 191, 255, 0.6),
-                0 0 40px rgba(0, 191, 255, 0.4);
-}
-
-/* 🌙 MODO OSCURO */
-body.dark-mode {
-  --color-bg: #121212;
-  --color-text: #f5f5f5;
-  --color-text-alt: #ffeb3b;
-  --color-card: #1e1e1e;
-  --color-border: #333;
-  --color-shadow: rgba(255, 255, 255, 0.05);
-  --color-hover: #66ccff;
-  --neon-glow: 0 0 8px rgba(102, 204, 255, 0.8),
-                0 0 15px rgba(102, 204, 255, 0.6);
 }
 
 /* ------------------ BASE ------------------ */
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #6c63ff, #3b82f6);
   margin: 0;
   padding: 0;
-  transition: background 0.4s ease, color 0.4s ease;
-}
-
-header, footer {
-  background-color: var(--color-card);
   color: var(--color-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===================================================
+   LOGIN SECTION (integrado con el tema general)
+   =================================================== */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #6c63ff, #3b82f6);
+}
+
+.login-container {
+  background: var(--color-card);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  box-sizing: border-box;
   text-align: center;
-  padding: 10px 0;
-  box-shadow: 0 2px 6px var(--color-shadow);
+  transition: transform 0.3s ease;
 }
 
-/* ------------------ NAVBAR ACORDEÓN ------------------ */
-.main-navbar {
-  background-color: #000;
+.login-container:hover {
+  transform: translateY(-5px);
+}
+
+.login-logo {
+  background: linear-gradient(135deg, #3b82f6, #6c63ff);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-container h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: 1.8rem;
+}
+
+/* Campos */
+.login-container input[type="email"],
+.login-container input[type="password"] {
+  width: 100%;
+  padding: 0.9rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  outline: none;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background: #f8f9fa;
+}
+
+.login-container input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 6px rgba(108, 99, 255, 0.4);
+}
+
+/* Botón principal */
+.login-container button {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
   color: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  padding: 10px 20px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  border: none;
+  border-radius: 10px;
+  padding: 0.9rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
-.navbar-header {
+.login-container button:hover {
+  transform: scale(1.03);
+  background: linear-gradient(135deg, #5b54e8, #2563eb);
+}
+
+/* Enlaces */
+.login-container a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.login-container a:hover {
+  text-decoration: underline;
+}
+
+/* Texto auxiliar */
+.login-container p {
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  color: #555;
+}
+
+.login-footer {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* ===================================================
+   DASHBOARD SECTION
+   =================================================== */
+.ms-dashboard {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.ms-sidebar {
+  background: #1e1e2f;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0 20px 20px 0;
+  flex-shrink: 0;
+}
+
+.ms-profile {
+  text-align: center;
+  margin-top: 1rem;
+}
+.ms-profile .avatar {
+  background: var(--color-primary);
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.ms-profile h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.ms-profile .email {
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.ms-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 2rem;
+}
+.ms-nav button {
+  background: none;
+  color: #fff;
+  border: none;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.ms-nav button:hover,
+.ms-nav button.active {
+  background: var(--color-primary);
+}
+
+.ms-footer {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.ms-footer button {
+  background: #ef4444;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Main */
+.ms-main {
+  flex: 1;
+  background: #f7f9fc;
+  border-radius: 20px 0 0 20px;
+  padding: 2rem;
+  overflow-y: auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.ms-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.navbar-toggler {
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.navbar-links {
-  display: flex;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 1rem;
 }
-
-.navbar-links.collapse {
-  display: none;
-}
-
-.navbar-links button {
-  flex: 1 1 auto;
-  min-width: 120px;
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  color: #fff;
+.ms-header h2 {
   font-weight: 600;
-  transition: all 0.3s ease;
-  background-size: 200% 200%;
+}
+.ms-search {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
 }
 
-/* Gradientes por botón */
-.navbar-links button[data-view="user"] { background-image: linear-gradient(45deg, #007bff, #0056b3); }
-.navbar-links button[data-view="devices"] { background-image: linear-gradient(45deg, #28a745, #198754); }
-.navbar-links button[data-view="alerts"] { background-image: linear-gradient(45deg, #dc3545, #a71d2a); }
-.navbar-links button[data-view="usuarios"] { background-image: linear-gradient(45deg, #e83e8c, #c2175c); }
-.navbar-links button[data-view="graficos"] { background-image: linear-gradient(45deg, #20c997, #198754); }
-.navbar-links button[data-view="geolocalizacion"] { background-image: linear-gradient(45deg, #17a2b8, #117a8b); }
-.navbar-links button[data-view="history"] { background-image: linear-gradient(45deg, #ffc107, #e0a800); color: #222; }
-.navbar-links button[data-view="userform"] { background-image: linear-gradient(45deg, #fd7e14, #e8590c); }
-.navbar-links button[data-view="tipomina"] { background-image: linear-gradient(45deg, #6610f2, #520dc2); }
-.navbar-links button[data-view="geoempresa"] { background-image: linear-gradient(45deg, #e83e8c, #c2175c); }
-.navbar-links button[data-view="pagina1"] { background-image: linear-gradient(45deg, #007bff, #0056b3); }
-.navbar-links button[data-view="pagina2"] { background-image: linear-gradient(45deg, #28a745, #198754); }
-.navbar-links button[data-view="admin"] { background-image: linear-gradient(45deg, #dc3545, #a71d2a); }
-
-/* Botón volver atrás */
-.navbar-links button#back { background-image: linear-gradient(45deg, #6c757d, #495057); }
-
-/* Animación hover */
-.navbar-links button:hover {
-  animation: gradientShift 3s ease infinite;
-  transform: scale(1.05);
-  box-shadow: 0 0 12px rgba(255,255,255,0.6);
-  filter: brightness(1.15);
+/* Summary Cards */
+.ms-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
-
-/* Logout y toggle */
-.main-navbar .logout { background-color: var(--color-danger); }
-.main-navbar .logout:hover { box-shadow: 0 0 12px rgba(255, 99, 132, 0.8); transform: scale(1.07); }
-.theme-toggle { background: var(--color-warning); color: #222; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: all 0.3s; }
-.theme-toggle:hover { box-shadow: 0 0 12px rgba(255, 193, 7, 0.8); transform: rotate(15deg); }
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ------------------ CARDS ------------------ */
-.card, .dashboard {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  box-shadow: 0 3px 10px var(--color-shadow);
-  padding: 20px;
-  margin: 20px auto;
-  max-width: 900px;
-  transition: background 0.3s, color 0.3s;
-}
-
-.card:hover { box-shadow: var(--neon-glow); }
-.card h2, .card h3, .card h4 { color: var(--color-text-alt); border-bottom: 2px solid var(--color-border); padding-bottom: 8px; }
-
-/* ------------------ FORMULARIOS ------------------ */
-input, select, textarea {
-  width: 100%; padding: 10px; margin-top: 8px;
-  border: 1px solid var(--color-border); border-radius: 6px;
-  background: var(--color-card); color: var(--color-text);
-  font-size: 0.95rem; box-sizing: border-box; transition: all 0.3s ease;
-}
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--neon-glow); }
-
-/* ------------------ BOTONES GENERALES ------------------ */
-button { padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.25s ease; }
-.btn-primary { background-color: var(--color-primary); color: #fff; }
-.btn-success { background-color: var(--color-success); color: #fff; }
-.btn-danger  { background-color: var(--color-danger); color: #fff; }
-.btn-warning { background-color: var(--color-warning); color: #222; }
-button:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: var(--neon-glow); }
-
-/* ------------------ ACCIONES DASHBOARD ------------------ */
-.actions button { position: relative; overflow: hidden; border: none; border-radius: 8px; color: #fff; font-weight: 600; padding: 10px 16px; cursor: pointer; transition: all 0.3s ease; background-size: 200% 200%; }
-.actions button:hover { animation: gradientShift 3s ease infinite; transform: translateY(-2px); box-shadow: 0 0 12px rgba(255,255,255,0.6); filter: brightness(1.15); }
-body.dark-mode .actions button { color: #fff; border: 1px solid rgba(255,255,255,0.2); }
-body.dark-mode .actions button:hover { box-shadow: 0 0 15px rgba(255,255,255,0.5); filter: brightness(1.25); }
-
-/* ------------------ ALERTAS ------------------ */
-.alert { border-radius: 8px; padding: 12px; margin: 10px 0; font-weight: 500; }
-.alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
-.alert-danger { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
-body.dark-mode .alert-success { background: #2b3a2b; color: #c3e6cb; border-left: 4px solid #28a745; }
-body.dark-mode .alert-danger { background: #3a2b2b; color: #f5b5b5; border-left: 4px solid #dc3545; }
-
-/* ------------------ MAPA ------------------ */
-#map { width: 100%; height: 400px; border-radius: 10px; box-shadow: 0 0 8px var(--color-shadow); }
-
-/* ------------------ FOOTER ------------------ */
-footer { text-align: center; color: var(--color-muted); font-size: 0.9rem; margin: 30px 0 10px; }
-
-/* TEXTOS MODO OSCURO */
-body.dark-mode p, body.dark-mode span, body.dark-mode label, body.dark-mode a,
-body.dark-mode li, body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
-  color: var(--color-text);
-}
-
-/* ------------------ LAYOUT RESPONSIVO ------------------ */
-@media (max-width: 1024px) { .navbar-links { justify-content: space-around; } }
-@media (max-width: 768px) { .navbar-links { flex-direction: column; gap: 6px; } .navbar-links button { width: 100%; font-size: 1rem; } .card { width: 92%; padding: 15px; } }
-@media (max-width: 480px) { .navbar-links button { padding: 9px 12px; border-radius: 6px; font-size: 0.9rem; } .card { width: 95%; margin: 10px auto; } #map { height: 300px; } }
-
-/* ================================================
-   FIN DEL ESTILO ADMIN PANEL MINESAFE 2
-   ================================================ */
-/* ================================================
-   🎌 ESTILO PÁGINA SECRETA ONE PIECE
-   ================================================ */
-.secret-page {
+.summary-card {
+  border-radius: 16px;
+  padding: 1rem;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  min-height: 80vh;
-  color: var(--color-text);
-  text-align: center;
-  animation: fadeIn 1.8s ease;
 }
-
-.flag-container {
-  margin: 20px 0;
-  animation: pulse 3s infinite ease-in-out;
+.summary-card h4 {
+  margin-bottom: 0.5rem;
 }
-
-.flag-anim {
-  max-width: 220px;
-  filter: drop-shadow(0 0 12px rgba(255,255,255,0.6));
-  animation: float 4s ease-in-out infinite;
-}
-
-.secret-title {
-  font-size: 2.2rem;
+.summary-card .value {
+  font-size: 1.6rem;
   font-weight: 700;
-  color: var(--color-text-alt);
-  text-shadow: var(--neon-glow);
-  margin-top: 15px;
-  animation: glowText 2s ease-in-out infinite alternate;
+}
+.summary-card.blue { background: #3b82f6; }
+.summary-card.purple { background: #6c63ff; }
+.summary-card.teal { background: #14b8a6; }
+.summary-card.yellow { background: #facc15; color: #222; }
+
+/* Panels */
+.ms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+  flex: 1;
 }
 
-.secret-text {
+.panel-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-top {
+  background: #f8fafc;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+.panel-top h3 {
+  margin: 0;
+  color: #333;
+}
+.panel-body {
+  padding: 1rem;
+}
+
+/* User Cards */
+.user-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.user-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  color: #212529;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+.user-card h4 {
   font-size: 1.2rem;
-  margin-top: 10px;
-  color: var(--color-text);
+  font-weight: 700;
+  color: #0056b3;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+.user-card .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+}
+.user-card .actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.haki-type {
-  font-size: 1.4rem;
+/* Botones */
+.btn-mini {
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-top: 20px;
-  color: var(--color-hover);
-  text-shadow: var(--neon-glow);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  flex: 1 1 auto;
+  min-width: 100px;
+}
+.btn-edit {
+  background-color: #ffc107;
+  color: #212529;
+}
+.btn-edit:hover { background-color: #e0a800; transform: scale(1.05); }
+.btn-del {
+  background-color: #dc3545;
+}
+.btn-del:hover { background-color: #b02a37; transform: scale(1.05); }
+
+/* Scroll */
+.ms-main::-webkit-scrollbar { width: 8px; }
+.ms-main::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 8px;
 }
 
-/* 🔥 Animaciones */
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+/* Responsive */
+@media (max-width: 900px) {
+  .ms-dashboard {
+    flex-direction: column;
+  }
+  .ms-sidebar {
+    width: 100%;
+    border-radius: 0;
+  }
+  .ms-main {
+    border-radius: 0;
+  }
+}
+/* ================================================
+   LOGIN PAGE — ESTILO MINESAFE V4
+   ================================================ */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 100px);
+  background: linear-gradient(135deg, #6c63ff, #3b82f6);
+  padding: 2rem;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-  50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(255,255,255,0.9)); }
+.login-container {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  transition: transform 0.3s ease;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+.login-container:hover {
+  transform: translateY(-5px);
 }
 
-@keyframes glowText {
-  0% { text-shadow: 0 0 8px var(--color-hover), 0 0 16px var(--color-hover); }
-  100% { text-shadow: 0 0 20px var(--color-hover), 0 0 40px var(--color-hover); }
-}
-/* ====================== Animación Mashle ====================== */
-.secret-page .flag-anim {
-  max-width: 220px;
-  filter: drop-shadow(0 0 12px rgba(255,255,255,0.6));
-  animation: mashleFloat 4s ease-in-out infinite, mashlePulse 3s infinite ease-in-out;
+.login-container h1 {
+  color: #3b3b98;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
-@keyframes mashleFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+.login-container .subtitle {
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
 }
 
-@keyframes mashlePulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-  50% { transform: scale(1.08); filter: drop-shadow(0 0 25px rgba(255,255,255,0.9)); }
+.login-container input {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-container input:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 0 6px rgba(108, 99, 255, 0.3);
+}
+
+.login-container button {
+  width: 100%;
+  background: linear-gradient(135deg, #6c63ff, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.9rem;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-container button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.login-container .links {
+  margin-top: 1.2rem;
+}
+
+.login-container a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-container a:hover {
+  text-decoration: underline;
+}
+
+.login-footer {
+  margin-top: 2rem;
+  color: #777;
+  font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 2rem 1.2rem;
+  }
+  .login-container h1 {
+    font-size: 1.6rem;
+  }
+}
+/* ===========================
+   BOTONES DE EXPORTACIÓN
+   =========================== */
+.btn-mini {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-export {
+  background: linear-gradient(135deg, #007bff, #00c6ff);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.btn-export:hover {
+  background: linear-gradient(135deg, #0062cc, #0099cc);
+  transform: translateY(-1px);
+}
+
+.btn-export:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+/* Botón PDF con color diferente */
+#exportPDF {
+  background: linear-gradient(135deg, #d9534f, #ff7675);
+}
+
+#exportPDF:hover {
+  background: linear-gradient(135deg, #c9302c, #ff5c5c);
+}
+
+/* Botón Excel con color diferente */
+#exportExcel {
+  background: linear-gradient(135deg, #28a745, #58d68d);
+}
+
+#exportExcel:hover {
+  background: linear-gradient(135deg, #218838, #45b26b);
+}
+body.dark-mode {
+  background: #0b132b;
+  color: #f1f1f1;
+}
+
+.panel-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.panel-card:hover {
+  transform: translateY(-3px);
+}
+
+.panel-top h5 {
+  margin: 0;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Botones exportar */
+.btn-mini {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-export {
+  background: linear-gradient(135deg, #007bff, #00c6ff);
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.btn-export:hover {
+  background: linear-gradient(135deg, #0062cc, #0099cc);
+  transform: translateY(-1px);
+}
+
+#exportPDF { background: linear-gradient(135deg, #d9534f, #ff7675); }
+#exportExcel { background: linear-gradient(135deg, #28a745, #58d68d); }
+#exportWord { background: linear-gradient(135deg, #6f42c1, #a29bfe); }
+
+#exportPDF:hover { background: linear-gradient(135deg, #c9302c, #ff5c5c); }
+#exportExcel:hover { background: linear-gradient(135deg, #218838, #45b26b); }
+#exportWord:hover { background: linear-gradient(135deg, #5a32a3, #8c7ae6); }
+.dashboard-container {
+  display: flex;
+  background: #f8f9fa;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 230px;
+  background: #343a40;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 15px;
+}
+
+.sidebar-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-nav button {
+  background: none;
+  color: white;
+  border: none;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sidebar-nav button:hover,
+.sidebar-nav button.active {
+  background: #495057;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.content-area {
+  flex: 1;
+  background: white;
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 20px;
+}
+
+.panel-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 15px;
+}
+
+.panel-top h5 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+/* Botones exportar */
+.btn-mini {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+#exportPDF { background: linear-gradient(135deg, #d9534f, #ff7675); color: #fff; }
+#exportExcel { background: linear-gradient(135deg, #28a745, #58d68d); color: #fff; }
+#exportWord { background: linear-gradient(135deg, #6f42c1, #a29bfe); color: #fff; }
+
+#exportPDF:hover, #exportExcel:hover, #exportWord:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
 }

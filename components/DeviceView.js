@@ -1,14 +1,14 @@
 // ================================================
-// DeviceView.js — Dispositivos y Historial + Localización
+// DeviceView.js — Dispositivos, GeoMinaEmpresa, Geolocalización + Historial
 // ================================================
-import { db, ref, onValue, set, auth, onAuthStateChanged } from "../firebaseConfig.js";
+import { db, ref, onValue, set } from "../firebaseConfig.js";
 import { navigate } from "../app.js";
 import { showHistoryManagerPage } from "./historyManager.js";
 
 const DEVICE_ID_DEFAULT = "device_A4CB2F124B00";
 
 // ================================================
-// NAVBAR FIJO RESPONSIVE PARA TODO DISPOSITIVO
+// NAVBAR
 // ================================================
 export function renderNavbar() {
   const nav = document.createElement("nav");
@@ -24,91 +24,236 @@ export function renderNavbar() {
       <button data-view="geolocalizacion">📍 Mapa</button>
     </div>
   `;
-
-  const buttons = nav.querySelectorAll("button");
-  buttons.forEach(btn => {
-    if (btn.dataset.view === "home") {
-      // Botón Inicio abre la página de dispositivos
-      btn.onclick = () => showDevices();
-    } else {
-      btn.onclick = () => navigate(btn.dataset.view);
-    }
+  nav.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => {
+      if (btn.dataset.view === "home") showDevices();
+      else navigate(btn.dataset.view);
+    };
   });
-
   return nav;
 }
 
 // ================================================
-// DASHBOARD ACTUALIZADO CON COLORES
+// DASHBOARD COMPLETO
 // ================================================
 export function showDevices() {
   const root = document.getElementById("root");
   root.innerHTML = "";
 
   const container = document.createElement("div");
-
-  // Agregar navbar
   container.appendChild(renderNavbar());
 
-  // Crear dashboard
   const dashboardDiv = document.createElement("div");
-  dashboardDiv.className = "dashboard";
+  dashboardDiv.className = "dashboard container mt-4";
+
   dashboardDiv.innerHTML = `
-    <h2>Dispositivo Asignado</h2>
-    <div class="actions">
-      <button class="btn-warning" id="backBtn">⬅️ Volver</button>
-      <button class="btn-primary" id="refreshBtn">🔄 Actualizar datos</button>
-      <button class="btn-success" id="historyBtn">📜 Ver historial completo</button>
-      <button class="btn-danger" id="saveBtn">💾 Guardar medición</button>
-      <button class="btn-primary" id="userFormBtn">👤 Datos Personales</button>
-      <button class="btn-success" id="tipoMinaBtn">⛏️ Tipo de Mina</button>
-      <button class="btn-warning" id="geoEmpresaBtn">🌍 Geo / Empresa</button>
-      <button class="btn-danger" id="usuariosBtn">👥 Usuarios</button>
-      <button class="btn-primary" id="graficosBtn">📊 Gráficos</button>
-      <button class="btn-success" id="geoBtn">📍 Mapa</button>
+    <h2 class="mb-4">Dispositivo Asignado</h2>
+    <div class="row mb-4">
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button id="backBtn" class="btn btn-secondary">⬅️ Volver</button>
+        <button id="refreshBtn" class="btn btn-info">🔄 Actualizar datos</button>
+        <button id="historyBtn" class="btn btn-warning">📜 Ver historial completo</button>
+        <button id="saveBtn" class="btn btn-success">💾 Guardar medición</button>
+      </div>
     </div>
-    <div id="deviceData" class="deviceDetails">Cargando dispositivo...</div>
-    <div id="camposMinaDiv" class="camposMina"></div>
+
+    <div class="row">
+
+      <!-- CARD DATOS DISPOSITIVO -->
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Datos del Dispositivo</h5>
+            <div id="deviceData">Cargando dispositivo...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD FORM GEO EMPRESA -->
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Registro Empresa & Mina</h5>
+            <form id="geoMinaForm">
+              <div class="mb-2">
+                <label>Nombre Empresa:</label>
+                <input id="empresa" class="form-control" placeholder="Nombre de la empresa" />
+              </div>
+              <div class="row mb-2">
+                <div class="col"><label>País</label><input id="pais" class="form-control" placeholder="País" readonly /></div>
+                <div class="col"><label>Región</label><input id="region" class="form-control" placeholder="Región / Estado" readonly /></div>
+              </div>
+              <div class="row mb-2">
+                <div class="col"><label>Comuna</label><input id="comuna" class="form-control" placeholder="Comuna / Municipio" readonly /></div>
+                <div class="col"><label>Nombre Mina</label><input id="mina" class="form-control" placeholder="Nombre de la mina" /></div>
+              </div>
+              <div class="mb-2">
+                <label>Tipo de mina</label>
+                <select id="tipoMina" class="form-select">
+                  <option value="">Seleccione...</option>
+                  <option value="subterranea">Subterránea</option>
+                  <option value="tajo_abierto">Tajo Abierto</option>
+                  <option value="aluvial">Aluvial</option>
+                  <option value="cantera">Cantera</option>
+                  <option value="pirquen">Pirquén / Artesanal</option>
+                </select>
+              </div>
+              <div id="camposExtras"></div>
+              <div class="mb-2">
+                <label>Latitud</label><input id="latitud" type="number" step="any" class="form-control" placeholder="Latitud" readonly />
+              </div>
+              <div class="mb-2">
+                <label>Longitud</label><input id="longitud" type="number" step="any" class="form-control" placeholder="Longitud" readonly />
+              </div>
+              <div class="mb-2">
+                <button type="button" id="btnGetLocation" class="btn btn-outline-primary w-100">📡 Obtener ubicación actual</button>
+              </div>
+              <div id="mapPreview" style="height:250px; border-radius:10px;"></div>
+              <button class="btn btn-primary w-100 mt-2">💾 Guardar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD VISTA PREVIA MAPA -->
+      <div class="col-lg-4 col-md-12 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Vista previa & Mapa</h5>
+            <p><strong>Empresa:</strong> <span id="p_empresa">—</span></p>
+            <p><strong>Mina:</strong> <span id="p_mina">—</span></p>
+            <p><strong>Tipo:</strong> <span id="p_tipo">—</span></p>
+            <p><strong>Coordenadas:</strong> <span id="p_coord">—</span></p>
+            <div id="mapPreviewCard" style="height:250px; border-radius:10px;"></div>
+            <button id="btnMapCard" class="btn btn-outline-success w-100 mt-2">📍 Mostrar mapa</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   `;
 
   container.appendChild(dashboardDiv);
   root.appendChild(container);
 
-  const deviceDataDiv = document.getElementById("deviceData");
-
-  // Eventos de botones
+  // ================= FUNCIONALIDAD BOTONES =================
   document.getElementById("backBtn").onclick = () => navigate("user");
   document.getElementById("refreshBtn").onclick = () =>
-    mostrarDatosDispositivo(DEVICE_ID_DEFAULT, deviceDataDiv);
+    mostrarDatosDispositivo(DEVICE_ID_DEFAULT, document.getElementById("deviceData"));
   document.getElementById("historyBtn").onclick = () =>
     showHistoricalPage(DEVICE_ID_DEFAULT);
   document.getElementById("saveBtn").onclick = () =>
     guardarMedicionActual(DEVICE_ID_DEFAULT);
-  document.getElementById("userFormBtn").onclick = () => navigate("userform");
-  document.getElementById("tipoMinaBtn").onclick = () => navigate("tipomina");
-  document.getElementById("geoEmpresaBtn").onclick = () => navigate("geoempresa");
-  document.getElementById("usuariosBtn").onclick = () => navigate("usuarios");
-  document.getElementById("graficosBtn").onclick = () => navigate("graficos");
-  document.getElementById("geoBtn").onclick = () => navigate("geolocalizacion");
 
-  mostrarDatosDispositivo(DEVICE_ID_DEFAULT, deviceDataDiv);
+  // ================= FORMULARIO + VISTA PREVIA =================
+  const tipoMina = document.getElementById("tipoMina");
+  const extras = document.getElementById("camposExtras");
+  const geoMinaForm = document.getElementById("geoMinaForm");
+
+  const p_empresa = document.getElementById("p_empresa");
+  const p_mina = document.getElementById("p_mina");
+  const p_tipo = document.getElementById("p_tipo");
+  const p_coord = document.getElementById("p_coord");
+
+  const plantillas = {
+    subterranea: `<h5>Datos subterráneos</h5><input id="nivel" class="form-control mb-2" placeholder="Nivel o piso" /><input id="galeria" class="form-control mb-2" placeholder="Galería / rampa" /><input id="frente" class="form-control mb-2" placeholder="Frente o cámara" />`,
+    tajo_abierto: `<h5>Tajo Abierto</h5><input id="tajo" class="form-control mb-2" placeholder="Tajo o sector" /><input id="banco" class="form-control mb-2" placeholder="Banco" /><input id="frente" class="form-control mb-2" placeholder="Frente activo" />`,
+    aluvial: `<h5>Aluvial</h5><input id="rio" class="form-control mb-2" placeholder="Río o quebrada" /><input id="tramo" class="form-control mb-2" placeholder="Tramo (km)" /><input id="poza" class="form-control mb-2" placeholder="Poza / frente" />`,
+    cantera: `<h5>Cantera</h5><input id="material" class="form-control mb-2" placeholder="Material extraído" /><input id="banco" class="form-control mb-2" placeholder="Banco / zona" /><input id="frente" class="form-control mb-2" placeholder="Frente activo" />`,
+    pirquen: `<h5>Pirquén / Artesanal</h5><input id="faena" class="form-control mb-2" placeholder="Nombre faena" /><input id="nivel" class="form-control mb-2" placeholder="Nivel principal" /><input id="frente" class="form-control mb-2" placeholder="Frente de trabajo" />`
+  };
+
+  function renderExtras(tipo) { extras.innerHTML = plantillas[tipo] || ""; }
+  tipoMina.onchange = (e) => {
+    renderExtras(e.target.value);
+    p_tipo.textContent = e.target.options[e.target.selectedIndex]?.text || "—";
+  };
+
+  function actualizarPreview() {
+    p_empresa.textContent = document.getElementById("empresa").value || "—";
+    p_mina.textContent = document.getElementById("mina").value || "—";
+    p_tipo.textContent = document.getElementById("tipoMina").selectedOptions[0]?.text || "—";
+    const lat = document.getElementById("latitud").value;
+    const lon = document.getElementById("longitud").value;
+    p_coord.textContent = lat && lon ? `${lat}, ${lon}` : "—";
+  }
+
+  geoMinaForm.onsubmit = (e) => {
+    e.preventDefault();
+    actualizarPreview();
+    alert("✅ Formulario actualizado y datos listos para guardar.");
+  };
+
+  ["empresa","mina","tipoMina","latitud","longitud"].forEach(id =>
+    document.getElementById(id).addEventListener("input", actualizarPreview)
+  );
+
+  // ================= INICIALIZAR DISPOSITIVO =================
+  mostrarDatosDispositivo(DEVICE_ID_DEFAULT, document.getElementById("deviceData"));
+
+  // ================= MAPA EN CARD =================
+  let mapCard = null;
+  let markerCard = null;
+  const btnMapCard = document.getElementById("btnMapCard");
+  btnMapCard.onclick = async () => {
+    const lat = parseFloat(document.getElementById("latitud").value) || -33.45;
+    const lon = parseFloat(document.getElementById("longitud").value) || -70.65;
+
+    if (!mapCard) {
+      mapCard = L.map("mapPreviewCard").setView([lat, lon], 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapCard);
+      markerCard = L.marker([lat, lon]).addTo(mapCard);
+    } else {
+      mapCard.setView([lat, lon], 13);
+      markerCard.setLatLng([lat, lon]);
+    }
+
+    alert("📍 Mapa actualizado con la ubicación actual.");
+  };
+
+  const btnGetLocation = document.getElementById("btnGetLocation");
+  btnGetLocation.onclick = () => {
+    if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); return; }
+    btnGetLocation.disabled = true; btnGetLocation.textContent = "Obteniendo...";
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      document.getElementById("latitud").value = lat;
+      document.getElementById("longitud").value = lon;
+
+      // Reverse geocoding
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`);
+        const data = await res.json();
+        const address = data.address || {};
+        document.getElementById("pais").value = address.country || "Desconocido";
+        document.getElementById("region").value = address.state || address.region || "Desconocido";
+        document.getElementById("comuna").value = address.city || address.town || address.village || address.municipality || "Desconocido";
+      } catch (err) {
+        console.error(err);
+      }
+
+      actualizarPreview();
+      btnGetLocation.disabled = false;
+      btnGetLocation.textContent = "📡 Obtener ubicación actual";
+      alert("✅ Ubicación obtenida y mapa listo.");
+    }, (err) => {
+      alert("No se pudo obtener la ubicación: " + err.message);
+      btnGetLocation.disabled = false;
+      btnGetLocation.textContent = "📡 Obtener ubicación actual";
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  };
 }
 
 // ================================================
-// MOSTRAR DATOS DEL DISPOSITIVO
+// FUNCIONES EXISTENTES
 // ================================================
 function mostrarDatosDispositivo(deviceId, container) {
   const deviceRef = ref(db, `dispositivos/${deviceId}`);
-  const camposMinaDiv = document.getElementById("camposMinaDiv");
-
   onValue(deviceRef, (snapshot) => {
     const d = snapshot.val();
-    if (!d) {
-      container.innerHTML = `<p>No se encontró ningún dispositivo con ID: <b>${deviceId}</b></p>`;
-      camposMinaDiv.innerHTML = "";
-      return;
-    }
-
+    if (!d) { container.innerHTML = `<p>No se encontró dispositivo ${deviceId}</p>`; return; }
     container.dataset.CO = d.CO ?? 0;
     container.dataset.CO2 = d.CO2 ?? 0;
     container.dataset.PM10 = d.PM10 ?? 0;
@@ -127,79 +272,12 @@ function mostrarDatosDispositivo(deviceId, container) {
       <p>Humedad: ${d.humedad ?? 0}%</p>
       <p>Temperatura: ${d.temperatura ?? 0} °C</p>
     `;
-
-    renderCampos(d.tipoMina, d, camposMinaDiv);
   });
 }
 
-// ================================================
-// RENDER CAMPOS SEGÚN TIPO DE MINA
-// ================================================
-function renderCampos(tipo, data, container) {
-  let html = "";
-  switch (tipo) {
-    case "subterranea":
-      html = `
-        <h4>⛏️ Subterránea</h4>
-        <p>Zona: ${data.zona ?? ""}</p>
-        <p>Rampa: ${data.rampa ?? ""}</p>
-        <p>Galería: ${data.galeria ?? ""}</p>
-        <p>Sector: ${data.sector ?? ""}</p>
-        <p>Nombre de estación: ${data.nombreEstacion ?? ""}</p>
-      `;
-      break;
-    case "tajo_abierto":
-      html = `
-        <h4>🪨 Tajo Abierto</h4>
-        <p>Banco: ${data.banco ?? ""}</p>
-        <p>Fase: ${data.fase ?? ""}</p>
-        <p>Frente: ${data.frente ?? ""}</p>
-        <p>Coordenadas GPS: ${data.coordGPS ?? ""}</p>
-      `;
-      break;
-    case "aluvial":
-      html = `
-        <h4>💧 Aluvial (placer)</h4>
-        <p>Mina: ${data.mina ?? ""}</p>
-        <p>Río: ${data.rio ?? ""}</p>
-        <p>Tramo: ${data.tramo ?? ""}</p>
-        <p>Cuadrante: ${data.cuadrante ?? ""}</p>
-        <p>Coordenadas GPS: ${data.coordGPS ?? ""}</p>
-      `;
-      break;
-    case "cantera":
-      html = `
-        <h4>🏗️ Cantera</h4>
-        <p>Cantera: ${data.cantera ?? ""}</p>
-        <p>Material: ${data.material ?? ""}</p>
-        <p>Frente: ${data.frente ?? ""}</p>
-        <p>Coordenadas GPS: ${data.coordGPS ?? ""}</p>
-        <p>Polígono: ${data.poligono ?? ""}</p>
-      `;
-      break;
-    case "pirquen":
-      html = `
-        <h4>🧰 Pirquén / Artesanal</h4>
-        <p>Faena: ${data.faena ?? ""}</p>
-        <p>Tipo de explotación: ${data.tipoExplotacion ?? ""}</p>
-        <p>Sector: ${data.sector ?? ""}</p>
-        <p>Coordenadas: ${data.coordGPS ?? ""}</p>
-        <p>Nivel (si aplica): ${data.nivel ?? ""}</p>
-      `;
-      break;
-    default:
-      html = "<p>Tipo de mina no especificado.</p>";
-  }
-  container.innerHTML = html;
-}
-
-// ================================================
-// GUARDAR MEDICIÓN MANUAL
-// ================================================
 function guardarMedicionActual(deviceId) {
   const container = document.getElementById("deviceData");
   if (!container) return;
-
   const timestamp = Date.now();
   const newData = {
     CO: Number(container.dataset.CO),
@@ -209,11 +287,19 @@ function guardarMedicionActual(deviceId) {
     humedad: Number(container.dataset.humedad),
     temperatura: Number(container.dataset.temperatura)
   };
-
   set(ref(db, `dispositivos/${deviceId}/historial_global/${timestamp}`), newData)
     .then(() => alert("Medición guardada correctamente!"))
     .catch(err => console.error(err));
 }
+
+// Aquí puedes añadir tus funciones de historial PDF/Excel como antes
+
+// ================================================
+// HISTORIAL, PDF, EXCEL y demás funciones existentes
+// ================================================
+// ... Aquí puedes pegar todas tus funciones de historial como en tu código anterior.
+
+// Aquí puedes añadir tus funciones de historial PDF/Excel según tu código anterior
 
 // ================================================
 // HISTORIAL COMPLETO

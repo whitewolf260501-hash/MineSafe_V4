@@ -1,83 +1,125 @@
-// ================================================
-// userDashboard.js — Panel de usuario con navbar Bootstrap + modo oscuro/claro
-// ================================================
+// ============================================================
+// userDashboard.js — Panel moderno con navegación + gráficos + velocímetro responsive
+// ============================================================
 import { auth, firestore, onAuthStateChanged } from "../firebaseConfig.js";
 import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { navigate } from "../app.js";
+
+// Asegúrate de tener Chart.js en tu proyecto:
+// <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 export function showUserDashboard() {
   const root = document.getElementById("root");
 
   root.innerHTML = `
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold text-warning" href="#">⚙️ Minesafe 2</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-        aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><button class="nav-link btn-link" data-view="userform">👤 Datos</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="tipomina">⛏️ Mina</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="geoempresa">🌍 Empresa</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="devices">💡 Dispositivos</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="alerts">🚨 Alertas</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="history">📜 Historial</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="manager">🗂️ Manage</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="usuarios">👥 Usuarios</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="graficos">📊 Gráficos</button></li>
-          <li class="nav-item"><button class="nav-link btn-link" data-view="geolocalizacion">📍 Mapa</button></li>
-        </ul>
-        <div class="d-flex">
-          <button id="themeToggle" class="btn btn-warning btn-sm me-2">🌙</button>
-          <button class="btn btn-danger btn-sm logout">🔒 Cerrar Sesión</button>
-        </div>
+  <div class="ms-dashboard">
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="ms-sidebar">
+      <div class="ms-brand">
+        <img src="assets/images/Logo2.png" alt="Minesafe" class="ms-logo"/>
+        <h1>Minesafe 2</h1>
       </div>
-    </div>
-  </nav>
 
-  <div class="container py-3">
-    <div class="dashboard">
-      <h2 class="fw-bold">Perfil del Usuario</h2>
-      <div id="userProfile" class="card p-3 mb-3 shadow-sm"></div>
+      <div class="ms-profile">
+        <div class="avatar">👤</div>
+        <h3 id="username">Usuario</h3>
+        <p class="email" id="useremail">correo@ejemplo.com</p>
+      </div>
 
-      <h3>Editar Datos</h3>
-      <form id="editForm" class="card p-3 shadow-sm">
-        <h4>Datos Personales</h4>
-        <label>Nombre:</label><input type="text" id="nombre" class="form-control mb-2" />
-        <label>Teléfono:</label><input type="text" id="telefono" class="form-control mb-2" />
-        <label>Dirección:</label><input type="text" id="direccion" class="form-control mb-2" />
-        <label>ID del Dispositivo:</label><input type="text" id="deviceId" class="form-control mb-2" />
+      <nav class="ms-nav">
+        <button data-view="userform" class="active">👤 Datos</button>
+        <button data-view="datosdelusuario">🧾 Mis Datos</button>
+        <button data-view="tipomina">⛏️ Mina</button>
+        <button data-view="geoempresa">🌍 Empresa</button>
+        <button data-view="geominaempresa">🏭 Empresa & Mina</button>
+        <button data-view="devices">💡 Dispositivos</button>
+        <button data-view="alerts">🚨 Alertas</button>
+        <button data-view="history">📜 Historial</button>
+        <button data-view="manager">🗂️ Manage</button>
+        <button data-view="usuarios">👥 Usuarios</button>
+        <button data-view="graficos">📊 Gráficos</button>
+        <button data-view="geolocalizacion">📍 Mapa</button>
+      </nav>
 
-        <h4>Tipo de Mina</h4>
-        <select id="tipoMina" class="form-select mb-2">
-          <option value="">Seleccione tipo...</option>
-          <option value="subterranea">Subterránea</option>
-          <option value="tajo_abierto">Tajo Abierto</option>
-          <option value="aluvial">Aluvial</option>
-          <option value="cantera">Cantera</option>
-          <option value="pirquen">Pirquén</option>
-        </select>
-        <div id="camposMina"></div>
+      <div class="ms-footer">
+        <button id="themeToggle" class="btn btn-ghost">🌓 Tema</button>
+        <button class="logout">🔒 Cerrar Sesión</button>
+      </div>
+    </aside>
 
-        <button type="submit" class="btn btn-primary mt-2">💾 Guardar</button>
-        <button type="button" id="deleteUser" class="btn btn-danger mt-2">🗑️ Eliminar</button>
-      </form>
+    <!-- ================== MAIN CONTENT ================== -->
+    <main class="ms-main">
+      <header class="ms-header">
+        <div class="ms-header-left">
+          <h2>Panel de Control</h2>
+          <p class="ms-sub">Monitoreo general del sistema</p>
+        </div>
+        <div class="ms-header-right">
+          <input type="search" placeholder="Buscar..." class="ms-search"/>
+        </div>
+      </header>
 
-      <h3 class="mt-4">Dispositivo Asignado</h3>
-      <div id="deviceData" class="card p-3 shadow-sm">Cargando dispositivo...</div>
-    </div>
+      <!-- ==== TARJETAS RESUMEN ==== -->
+      <section class="ms-summary">
+        <div class="summary-card blue">
+          <h4>Ingresos</h4>
+          <p class="value">$20,000</p>
+        </div>
+        <div class="summary-card purple">
+          <h4>Uso de Nube</h4>
+          <p class="value">50/50 GB</p>
+        </div>
+        <div class="summary-card teal">
+          <h4>Dispositivos Activos</h4>
+          <p class="value">8</p>
+        </div>
+        <div class="summary-card yellow">
+          <h4>Alertas Recientes</h4>
+          <p class="value">3</p>
+        </div>
+      </section>
+
+      <!-- ==== BLOQUE DE GRÁFICOS ==== -->
+      <section class="ms-grid">
+        <div class="panel-card">
+          <div class="panel-top"><h3>Actividad de Sensores</h3></div>
+          <div class="panel-body"><canvas id="sensorChart"></canvas></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-top">
+            <h3>Nivel de Sensores</h3>
+            <p class="subtitulo">Estado</p>
+          </div>
+          <div class="panel-body">
+            <canvas id="sensorGauge" style="width:100%; height:auto;"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
   `;
 
-  // ==================== NAVBAR NAVIGATION ====================
+  // ==================== NAVBAR FUNCIONAL ====================
   document.querySelectorAll("button[data-view]").forEach(btn => {
-    btn.addEventListener("click", () => navigate(btn.dataset.view));
+    btn.addEventListener("click", async () => {
+      const view = btn.dataset.view;
+
+      document.querySelectorAll(".ms-nav button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      if (view === "geominaempresa") {
+        const module = await import("./GeoMinaEmpresaDashboard.js");
+        module.showGeoMinaEmpresaDashboard();
+      } else if (view === "datosdelusuario") {
+        navigate("datosdelusuario");
+      } else {
+        navigate(view);
+      }
+    });
   });
 
-  // Logout
+  // ==================== LOGOUT ====================
   document.querySelector(".logout").onclick = async () => {
     await auth.signOut();
     navigate("login");
@@ -86,55 +128,120 @@ export function showUserDashboard() {
   // ==================== TEMA OSCURO / CLARO ====================
   const themeBtn = document.getElementById("themeToggle");
   themeBtn.onclick = () => {
-    document.body.classList.toggle("dark-mode");
-    themeBtn.textContent = document.body.classList.contains("dark-mode") ? "🌞" : "🌙";
-    localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+    document.body.classList.toggle("ms-dark");
+    themeBtn.textContent = document.body.classList.contains("ms-dark") ? "🌞" : "🌓";
+    localStorage.setItem("theme", document.body.classList.contains("ms-dark") ? "dark" : "light");
   };
-  // Aplica tema guardado
   if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark-mode");
+    document.body.classList.add("ms-dark");
     themeBtn.textContent = "🌞";
   }
-
-  // ==================== CAMPOS DE MINA DINÁMICOS ====================
-  const tipoSelect = document.getElementById("tipoMina");
-  const camposMinaDiv = document.getElementById("camposMina");
-
-  tipoSelect.addEventListener("change", (e) => {
-    let html = "";
-    switch (e.target.value) {
-      case "subterranea":
-        html = `
-          <label>Zona:</label><input id="zona" class="form-control mb-2" />
-          <label>Rampa:</label><input id="rampa" class="form-control mb-2" />
-          <label>Galería:</label><input id="galeria" class="form-control mb-2" />
-          <label>Sector:</label><input id="sector" class="form-control mb-2" />
-        `;
-        break;
-      case "tajo_abierto":
-        html = `
-          <label>Banco:</label><input id="banco" class="form-control mb-2" />
-          <label>Fase:</label><input id="fase" class="form-control mb-2" />
-          <label>Frente:</label><input id="frente" class="form-control mb-2" />
-        `;
-        break;
-    }
-    camposMinaDiv.innerHTML = html;
-  });
 
   // ==================== PERFIL DE USUARIO ====================
   onAuthStateChanged(auth, async (user) => {
     if (!user) return (root.innerHTML = "<p>No hay usuario autenticado.</p>");
     const userDoc = doc(firestore, "users", user.uid);
-
     onSnapshot(userDoc, (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      document.getElementById("userProfile").innerHTML = `
-        <p><b>Nombre:</b> ${data.nombre || "-"}</p>
-        <p><b>Email:</b> ${user.email}</p>
-        <p><b>Tipo de mina:</b> ${data.tipoMina || "-"}</p>
-      `;
+      document.getElementById("username").textContent = data.nombre || "Usuario";
+      document.getElementById("useremail").textContent = user.email;
     });
   });
+
+  // ==================== INICIAR GRÁFICOS ====================
+  initCharts();
 }
-  // ==================== DATOS DEL DISPOSITIVO ASIGNADO ==================== 
+
+// ============================================================
+// FUNCIÓN: INICIALIZAR GRÁFICOS
+// ============================================================
+function initCharts() {
+  // === Línea: Actividad de sensores ===
+  const ctx1 = document.getElementById("sensorChart");
+  new Chart(ctx1, {
+    type: "line",
+    data: {
+      labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+      datasets: [{
+        label: "CO Detectado",
+        data: [12, 19, 13, 15, 22, 18, 25],
+        borderColor: "#6c63ff",
+        backgroundColor: "rgba(108,99,255,0.2)",
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // === Gauge (estado general) ===
+  drawGauge("sensorGauge", 65);
+}
+
+// ============================================================
+// FUNCIÓN: DIBUJAR GAUGE RESPONSIVE
+// ============================================================
+function drawGauge(canvasId, value) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+
+  function render() {
+    const width = canvas.clientWidth;
+    const height = width * 0.6;
+    canvas.width = width;
+    canvas.height = height;
+
+    const centerX = width / 2;
+    const centerY = height * 0.9;
+    const radius = Math.min(width, height) / 3;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // === Zonas de color (verde / amarillo / rojo) ===
+    const zones = [
+      { color: "#00b894", start: -Math.PI, end: -Math.PI / 3 },
+      { color: "#fdcb6e", start: -Math.PI / 3, end: Math.PI / 3 },
+      { color: "#d63031", start: Math.PI / 3, end: 0 }
+    ];
+
+    zones.forEach(z => {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, z.start, z.end, false);
+      ctx.lineWidth = 20;
+      ctx.strokeStyle = z.color;
+      ctx.stroke();
+    });
+
+    // === Aguja ===
+    const angle = -Math.PI + (value / 100) * Math.PI;
+    const needleLength = radius * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(centerX + needleLength * Math.cos(angle), centerY + needleLength * Math.sin(angle));
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#2d3436";
+    ctx.stroke();
+
+    // === Centro ===
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = "#2d3436";
+    ctx.fill();
+
+    // === Valor ===
+    ctx.font = `${Math.max(14, radius * 0.25)}px Poppins`;
+    ctx.fillStyle = "#2d3436";
+    ctx.textAlign = "center";
+    ctx.fillText(value + "%", centerX, centerY - radius * 1.2);
+  }
+
+  render();
+  window.addEventListener("resize", render);
+}

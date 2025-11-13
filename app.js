@@ -1,4 +1,4 @@
-/// ================================================
+// ================================================ 
 // app.js — Navegación principal con navbar global estilizada
 // ================================================
 import { showLogin } from "./components/Login.js";
@@ -15,9 +15,13 @@ import { showPagina2 } from "./components/Pagina2.js";
 import { showUsuarios } from "./components/Usuarios.js";
 import { showGraficos } from "./components/Graficos.js";
 import { showGeolocalizacion } from "./components/Geolocalizacion.js";
-import { auth } from "./firebaseConfig.js";
-import { renderNavbar } from "./components/navbar.js";
 import { showHistoryManagerPage } from "./components/historyManager.js";
+import { showRecoverPassword } from "./components/RecoverPassword.js";
+import { renderNavbar } from "./components/navbar.js";
+import { auth } from "./firebaseConfig.js";
+
+// 🔹 Nueva importación
+import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
 try {
@@ -29,21 +33,15 @@ try {
 
 const root = document.getElementById("root");
 
-// ================================================
-// FUNCIÓN GLOBAL DE NAVEGACIÓN
-// ================================================
 export function navigate(view) {
   root.innerHTML = "";
 
-  // Login y Registro → sin navbar
-  if (view === "login") {
+  // Login, Registro y Recuperar → sin navbar
+  if (["login", "register", "recoverPassword"].includes(view)) {
     document.querySelector("header").style.display = "flex";
-    showLogin();
-    return;
-  }
-  if (view === "register") {
-    document.querySelector("header").style.display = "flex";
-    showRegister();
+    if (view === "login") showLogin();
+    if (view === "register") showRegister();
+    if (view === "recoverPassword") showRecoverPassword();
     return;
   }
 
@@ -64,6 +62,19 @@ export function navigate(view) {
     case "userform": showUserForm(); break;
     case "tipomina": showTipoMinaForm(); break;
     case "geoempresa": showGeoEmpresaForm(); break;
+
+    // 🔹 Nueva vista: Empresa & Mina
+    case "geominaempresa":
+      import("./components/GeoMinaEmpresaDashboard.js")
+        .then(module => module.showGeoMinaEmpresaDashboard())
+        .catch(err => console.error("Error cargando GeoMinaEmpresaDashboard:", err));
+      break;
+
+    // 🔹 Nueva vista: Datos del Usuario
+    case "datosdelusuario":
+      showDatoDelUsuario();
+      break;
+
     case "usuarios": showUsuarios(); break;
     case "graficos": showGraficos(); break;
     case "geolocalizacion": showGeolocalizacion(); break;
@@ -79,8 +90,5 @@ export function navigate(view) {
   }
 }
 
-// ================================================
-// ARRANQUE INICIAL
-// ================================================
+// Arranque inicial
 navigate("login");
-// ================================================   
