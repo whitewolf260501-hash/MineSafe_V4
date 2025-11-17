@@ -462,3 +462,62 @@ function guardarHistorialComoExcel(deviceId, registros) {
   link.download = `historial-global-${deviceId}.csv`;
   link.click();
 }
+function cargarHistorialGlobal(deviceId, container, btnPDF, btnExcel) {
+  const histRef = ref(db, `dispositivos/${deviceId}/historial_global`);
+  
+  console.log("📡 Escuchando historial en Firebase para:", deviceId);
+
+  onValue(histRef, (snapshot) => {
+    const data = snapshot.val();
+
+    if (!data) {
+      container.innerHTML = "<p>No hay historial almacenado.</p>";
+      btnPDF.disabled = true;
+      btnExcel.disabled = true;
+      return;
+    }
+
+    // Activar exportaciones
+    btnPDF.disabled = false;
+    btnExcel.disabled = false;
+
+    const entries = Object.entries(data).sort((a, b) => b[0] - a[0]);
+
+    let html = `
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>CO</th>
+            <th>CO₂</th>
+            <th>PM10</th>
+            <th>PM2.5</th>
+            <th>Humedad</th>
+            <th>Temp</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    entries.forEach(([timestamp, v]) => {
+      const fecha = new Date(Number(timestamp)).toLocaleString();
+
+      html += `
+        <tr>
+          <td>${fecha}</td>
+          <td>${v.CO}</td>
+          <td>${v.CO2}</td>
+          <td>${v.PM10}</td>
+          <td>${v.PM2_5}</td>
+          <td>${v.humedad}</td>
+          <td>${v.temperatura}</td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+
+    console.log("📥 Historial recibido:", entries.length, "registros.");
+  });
+}
