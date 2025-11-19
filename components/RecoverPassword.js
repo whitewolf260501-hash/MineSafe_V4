@@ -52,7 +52,22 @@ export function showRecoverPassword() {
       emailInput.value = "";
     } catch (error) {
       console.error("Error al enviar correo:", error);
-      messageEl.textContent = "Error al enviar el correo: " + error.message;
+
+      // Mostrar mensajes claros según el tipo de error
+      switch (error.code) {
+        case "auth/invalid-email":
+          messageEl.textContent = "El correo ingresado no es válido.";
+          break;
+        case "auth/user-not-found":
+          messageEl.textContent = "No se encontró una cuenta con ese correo.";
+          break;
+        case "auth/too-many-requests":
+          messageEl.textContent = "Has enviado demasiadas solicitudes. Intenta más tarde.";
+          break;
+        default:
+          messageEl.textContent = "Ocurrió un error al enviar el correo. Intenta nuevamente.";
+      }
+
       messageEl.style.color = "red";
     }
   };
