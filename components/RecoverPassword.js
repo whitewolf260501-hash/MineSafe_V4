@@ -7,56 +7,69 @@ import { navigate } from "../app.js";
 
 export function showRecoverPassword() {
   const root = document.getElementById("root");
+
   root.innerHTML = `
-    <div class="card">
-      <h2>Recuperar contraseña</h2>
-      <p>Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
-      <input id="emailRecover" placeholder="Correo electrónico" type="email" class="form-control mt-2" />
-      
-      <!-- reCAPTCHA visible -->
-      <div id="recaptcha-container" class="mt-2 mb-2"></div>
-      
-      <button id="btnRecover" class="btn-primary mt-2">Enviar enlace</button>
-      <p><a id="goLogin" href="#">Volver al inicio de sesión</a></p>
+    <div class="login-page">
+      <div class="login-container">
+        <h1>Recuperar contraseña</h1>
+        <p class="subtitle">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+
+        <input id="emailRecover" type="email" placeholder="Correo electrónico" class="form-control" />
+        
+        <!-- reCAPTCHA invisible -->
+        <div id="recaptcha-container" style="display:none;"></div>
+
+        <button id="btnRecover" class="btn-primary mt-3">Enviar enlace</button>
+        <p id="message" class="mt-2"></p>
+
+        <div class="links">
+          <p><a id="goLogin" href="#">Volver al inicio de sesión</a></p>
+        </div>
+
+        <footer class="login-footer">© 2025 Minesafe 2</footer>
+      </div>
     </div>
   `;
 
+  const messageEl = document.getElementById("message");
+  const emailInput = document.getElementById("emailRecover");
+
+  // Navegar a login
   document.getElementById("goLogin").onclick = () => navigate("login");
 
-  // Inicializar reCAPTCHA visible
+  // Inicializar reCAPTCHA invisible
   window.recaptchaVerifier = new RecaptchaVerifier(
     "recaptcha-container",
     {
-      size: "normal", // checkbox visible
-      callback: (response) => {
-        console.log("reCAPTCHA verificado:", response);
-      },
-      "expired-callback": () => {
-        console.warn("reCAPTCHA expirado, por favor verifica nuevamente.");
-      }
+      size: "invisible", // invisible
+      callback: (response) => console.log("reCAPTCHA verificado:", response),
+      "expired-callback": () => console.warn("reCAPTCHA expirado, verifica nuevamente."),
     },
     auth
   );
 
+  // Enviar enlace de recuperación
   document.getElementById("btnRecover").onclick = async () => {
-    const email = document.getElementById("emailRecover").value.trim();
+    const email = emailInput.value.trim();
 
     if (!email) {
-      alert("Por favor, ingresa tu correo electrónico");
+      messageEl.textContent = "Por favor, ingresa tu correo electrónico";
+      messageEl.style.color = "red";
       return;
     }
 
     try {
-      // Llamar a sendPasswordResetEmail con reCAPTCHA ya inicializado
       await sendPasswordResetEmail(auth, email, {
-        // Pass the recaptchaVerifier here
         recaptchaVerifier: window.recaptchaVerifier
       });
-      alert("Se ha enviado un enlace de recuperación a tu correo.");
-      navigate("login");
+
+      messageEl.textContent = "Se ha enviado un enlace de recuperación a tu correo ✔";
+      messageEl.style.color = "green";
+      emailInput.value = "";
     } catch (error) {
       console.error("Error al enviar correo:", error);
-      alert("Error al enviar el correo: " + error.message);
+      messageEl.textContent = "Error al enviar el correo: " + error.message;
+      messageEl.style.color = "red";
     }
   };
 }
