@@ -1,8 +1,7 @@
-// ================================================
-// Login.js — Ventana de inicio de sesión Minesafe V4
-// ================================================
+// components/Login.js
 import { auth } from "../firebaseConfig.js";
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { signInWithEmailAndPassword }
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { navigate } from "../app.js";
 
 export function showLogin() {
@@ -12,10 +11,10 @@ export function showLogin() {
       <div class="login-container">
         <h1>Iniciar Sesión</h1>
         <p class="subtitle">Bienvenido a <strong>Minesafe 2</strong></p>
-        
+
         <input id="email" type="email" placeholder="Correo electrónico" />
         <input id="password" type="password" placeholder="Contraseña" />
-        
+
         <button id="btnLogin" class="btn-primary">Entrar</button>
 
         <div class="links">
@@ -32,7 +31,7 @@ export function showLogin() {
   document.getElementById("goRegister").onclick = () => navigate("register");
   document.getElementById("forgotPassword").onclick = () => navigate("recoverPassword");
 
-  // Inicio de sesión
+  // Login
   document.getElementById("btnLogin").onclick = async () => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
@@ -44,8 +43,11 @@ export function showLogin() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+
+      // Redirección según usuario
       if (email === "admin@minesafe.com") navigate("admin");
       else navigate("user");
+
     } catch (error) {
       alert("Error al iniciar sesión: " + error.message);
     }

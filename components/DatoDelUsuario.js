@@ -1,3 +1,7 @@
+// datoDelUsuario.js
+// ================================================
+// DatoDelUsuario.js — Gestión avanzada de usuarios
+// ================================================
 import { auth, firestore } from "../firebaseConfig.js";
 import {
   doc,
@@ -6,13 +10,77 @@ import {
   deleteDoc,
   collection,
   onSnapshot,
+  query,
+  where,
+  getDocs,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
 import {
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+import {
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  update as rtdbUpdate,
+  remove as rtdbRemove,
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
 import { navigate } from "../app.js";
 
+// =====================================================
+// 🔥 UTIL: normalizar email -> id seguro para doc keys
+// =====================================================
+function sanitizeId(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+// =====================================================
+// 🔥 OBTENER ROL REAL
+// =====================================================
+async function getUserRoleReal(uid) {
+  try {
+    const ref = doc(firestore, "users", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return "usuario";
+    const data = snap.data();
+    if (data.isSuperUser === true) return "superAdmin";
+    if (data.isAdmin === true) return "admin";
+    return "usuario";
+  } catch (err) {
+    console.error("getUserRoleReal error:", err);
+    return "usuario";
+  }
+}
+
+// =====================================================
+// 🔥 VERIFICAR SI YA EXISTE UN SUPERADMIN
+// =====================================================
+async function existeSuperAdmin() {
+  try {
+    const q = query(collection(firestore, "users"), where("isSuperUser", "==", true));
+    const snap = await getDocs(q);
+    return snap.size > 0;
+  } catch (err) {
+    console.error("existeSuperAdmin error:", err);
+    return false;
+  }
+}
+
+// =====================================================
+// 🔥 Inicializar RTDB
+// =====================================================
+const rtdb = getDatabase();
+
+// =====================================================
+// VISTA PRINCIPAL
+// =====================================================
 export function showDatoDelUsuario() {
   const root = document.getElementById("root");
 
@@ -98,7 +166,6 @@ export function showDatoDelUsuario() {
               <select id="tipoUsuario" class="form-control">
                 <option value="usuario">Usuario Normal</option>
                 <option value="admin">Administrador</option>
-                <option value="superAdmin">Superusuario</option>
               </select>
             </div>
 
@@ -122,9 +189,9 @@ export function showDatoDelUsuario() {
   </div>
   `;
 
-  // ==============================
+  // ==========================================
   // VARIABLES
-  // ==============================
+  // ==========================================
   const uid = document.getElementById("uid");
   const nombre = document.getElementById("nombre");
   const email = document.getElementById("email");
@@ -133,144 +200,302 @@ export function showDatoDelUsuario() {
   const empresa = document.getElementById("empresa");
   const tipoUsuario = document.getElementById("tipoUsuario");
   const roleRow = document.getElementById("roleRow");
+
   const form = document.getElementById("userForm");
   const usersList = document.getElementById("usersList");
   const userFormContainer = document.getElementById("userFormContainer");
 
-  let userActual = null;
-  let currentUserRole = "usuario";
+  let userActual = null; // doc id (string) cuando editamos
+  let currentUserRole = null;
+  let currentUid = null;
 
-  // ==============================
-  // DETECTAR USUARIO ACTUAL
-  // ==============================
+  // =====================================================
+  // DETECTAR USUARIO LOGEADO
+  // =====================================================
   onAuthStateChanged(auth, async (user) => {
     if (!user) return navigate("login");
 
-    const ref = doc(firestore, "users", user.uid);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      currentUserRole = data.tipoUsuario || "usuario";
+    currentUid = user.uid;
+    currentUserRole = await getUserRoleReal(user.uid);
 
-      // Solo admin o superAdmin pueden crear usuarios
-      if (currentUserRole === "admin" || currentUserRole === "superAdmin") {
-        userFormContainer.style.display = "block";
-        roleRow.style.display = "block";
-      }
+    // always show the form container (role controls inside)
+    userFormContainer.style.display = "block";
+
+    if (currentUserRole === "usuario") {
+      roleRow.style.display = "none";
+      // Autocompletar datos propios
+      const ref = doc(firestore, "users", user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : {};
+
+      uid.value = user.uid;
+      nombre.value = data.nombre || "";
+      email.value = data.email || "";
+      telefono.value = data.telefono || "";
+      cargo.value = data.cargo || "";
+      empresa.value = data.empresa || "";
+
+      userActual = user.uid;
+    } else {
+      // admin / superAdmin: show role controls
+      roleRow.style.display = "block";
     }
   });
 
-  // ==============================
-  // LISTAR USUARIOS
-  // ==============================
+  // =====================================================
+  // LISTAR USUARIOS (real-time Firestore)
+  // =====================================================
   onSnapshot(collection(firestore, "users"), (snapshot) => {
+    if (!currentUserRole) return; // wait until role resolved
     usersList.innerHTML = "";
+
     snapshot.forEach((docu) => {
       const data = docu.data();
-      const rol = data.tipoUsuario || "usuario";
+      const id = docu.id;
+
+      // Usuario normal sólo ve su propio registro
+      if (currentUserRole === "usuario" && id !== currentUid) return;
+
+      // determinar rol visual
+      const rol = data.isSuperUser === true ? "superAdmin" : data.isAdmin === true ? "admin" : "usuario";
+
+      const canEdit = currentUserRole === "superAdmin" || currentUserRole === "admin" || (currentUserRole === "usuario" && id === currentUid);
+      const canDelete = currentUserRole === "superAdmin";
+      const canToggle = currentUserRole === "superAdmin" || currentUserRole === "admin";
+
+      const isActive = data.isActive !== false; // default true
+      const estadoTexto = isActive ? "Activo" : "Inactivo";
+      const estadoColor = isActive ? "#22bb33" : "#ff8800";
+      const botonColorStyle = isActive ? "background:#22bb33;" : "background:#ff8800;";
+      const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
+
       const div = document.createElement("div");
       div.className = "user-card glass animate-fade";
+
       div.innerHTML = `
         <h4 class="text-primary">👤 ${data.nombre || "—"}</h4>
-        <div class="row"><strong>Email:</strong> ${data.email || "—"}</div>
-        <div class="row"><strong>Teléfono:</strong> ${data.telefono || "—"}</div>
-        <div class="row"><strong>Empresa:</strong> ${data.empresa || "—"}</div>
-        <div class="row"><strong>Rol:</strong> <span class="badge badge-${rol}">${rol}</span></div>
+        <div><strong>Email:</strong> ${data.email || "—"}</div>
+        <div><strong>Teléfono:</strong> ${data.telefono || "—"}</div>
+        <div><strong>Empresa:</strong> ${data.empresa || "—"}</div>
+        <div><strong>Rol:</strong> <span class="badge badge-${rol}">${rol}</span></div>
+        <div><strong>Estado:</strong> <span style="color:${estadoColor}; font-weight:bold">${estadoTexto}</span></div>
+
         <div class="row actions">
-          <button class="btn-mini btn-edit" data-id="${docu.id}">✏️ Editar</button>
-          <button class="btn-mini btn-del" data-id="${docu.id}">🗑 Eliminar</button>
+          ${canEdit ? `<button class="btn-mini btn-edit" data-id="${id}">✏️ Editar</button>` : ""}
+          ${canToggle ? `<button class="btn-mini btn-toggle" data-id="${id}" style="${botonColorStyle} color:white; border:none; border-radius:6px; font-weight:bold;">${botonTexto}</button>` : ""}
+          ${canDelete ? `<button class="btn-mini btn-del" data-id="${id}">🗑 Eliminar</button>` : ""}
         </div>
       `;
+
       usersList.appendChild(div);
     });
 
-    // Editar
-    document.querySelectorAll(".btn-edit").forEach((b) =>
-      b.addEventListener("click", async () => {
-        const id = b.dataset.id;
+    // -----------------------
+    // EDIT
+    // -----------------------
+    document.querySelectorAll(".btn-edit").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.id;
         const ref = doc(firestore, "users", id);
-        const snapshot = await getDoc(ref);
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          uid.value = id;
-          nombre.value = data.nombre || "";
-          email.value = data.email || "";
-          telefono.value = data.telefono || "";
-          cargo.value = data.cargo || "";
-          empresa.value = data.empresa || "";
-          tipoUsuario.value = data.tipoUsuario || "usuario";
-          userActual = id;
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const data = snap.data();
+
+        uid.value = id;
+        nombre.value = data.nombre || "";
+        email.value = data.email || "";
+        telefono.value = data.telefono || "";
+        cargo.value = data.cargo || "";
+        empresa.value = data.empresa || "";
+
+        // si currentUserRole es superAdmin permitimos cambiar entre admin/usuario
+        if (currentUserRole === "superAdmin") {
+          tipoUsuario.value = data.isSuperUser === true ? "superAdmin" : data.isAdmin === true ? "admin" : "usuario";
+        } else if (currentUserRole === "admin") {
+          tipoUsuario.value = "usuario"; // admin no puede ascender a administradores
         }
+
+        userActual = id;
       })
     );
 
-    // Eliminar
-    document.querySelectorAll(".btn-del").forEach((b) =>
-      b.addEventListener("click", async () => {
-        const id = b.dataset.id;
+    // -----------------------
+    // TOGGLE (activar/desactivar)
+    // -----------------------
+    document.querySelectorAll(".btn-toggle").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.id;
+        const ref = doc(firestore, "users", id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const data = snap.data();
+
+        const nuevoEstado = data.isActive === false; // si era falso -> true, si era true/undefined -> false
+
+        // Firestore
+        await updateDoc(ref, {
+          isActive: nuevoEstado,
+          updatedAt: new Date().toISOString(),
+        });
+
+        // Realtime DB
+        try {
+          const rtdbPath = `/usuarios/${id}`;
+          await rtdbUpdate(rtdbRef(rtdb, rtdbPath), {
+            isActive: nuevoEstado,
+            updatedAt: Date.now(),
+          });
+        } catch (err) {
+          // si no existe en RTDB, crear con mínimos
+          try {
+            const rtdbPath = `/usuarios/${id}`;
+            await rtdbSet(rtdbRef(rtdb, rtdbPath), {
+              email: data.email || "",
+              nombre: data.nombre || "",
+              telefono: data.telefono || "",
+              empresa: data.empresa || "",
+              isActive: nuevoEstado,
+              updatedAt: Date.now(),
+            });
+          } catch (e) {
+            console.error("RTDB update/create error:", e);
+          }
+        }
+
+        alert(`✔ Usuario ${nuevoEstado ? "activado" : "desactivado"} correctamente.`);
+      })
+    );
+
+    // -----------------------
+    // DELETE (Firestore + RTDB)
+    // -----------------------
+    document.querySelectorAll(".btn-del").forEach((btn) =>
+      btn.addEventListener("click", async () => {
         if (currentUserRole !== "superAdmin") {
-          alert("❌ Solo el superusuario puede eliminar usuarios.");
+          alert("❌ Solo el SuperAdmin puede eliminar usuarios.");
           return;
         }
-        if (confirm("¿Eliminar este usuario definitivamente?")) {
+
+        if (!confirm("¿Eliminar este usuario definitivamente? (Se eliminará de Firestore y Realtime DB)")) return;
+
+        const id = btn.dataset.id;
+        try {
           await deleteDoc(doc(firestore, "users", id));
+        } catch (err) {
+          console.error("Firestore delete error:", err);
         }
+
+        try {
+          await rtdbRemove(rtdbRef(rtdb, `/usuarios/${id}`));
+        } catch (err) {
+          console.error("RTDB remove error:", err);
+        }
+
+        alert("✅ Usuario eliminado de Firestore y Realtime DB (Auth no puede borrarse desde cliente).");
       })
     );
   });
 
-  // ==============================
-  // GUARDAR / ACTUALIZAR
-  // ==============================
+  // =====================================================
+  // GUARDAR / ACTUALIZAR (Firestore + Realtime DB)
+  // =====================================================
   form.onsubmit = async (e) => {
     e.preventDefault();
 
-    if (currentUserRole !== "admin" && currentUserRole !== "superAdmin") {
-      alert("❌ No tienes permiso para crear o modificar usuarios.");
+    const allowed =
+      currentUserRole === "superAdmin" ||
+      currentUserRole === "admin" ||
+      (currentUserRole === "usuario" && userActual === currentUid);
+
+    if (!allowed) return alert("❌ No tienes permiso para editar.");
+
+    // Roles
+    let roleToSave = "usuario";
+    if (currentUserRole === "superAdmin") roleToSave = tipoUsuario.value || "usuario";
+    if (currentUserRole === "admin") roleToSave = "usuario"; // admin solo crea usuarios normales
+
+    // evitar crear 2do superAdmin
+    const superAdminExists = await existeSuperAdmin();
+    if (roleToSave === "superAdmin" && superAdminExists) {
+      alert("❌ Ya existe un SuperAdmin. No se puede crear otro.");
       return;
     }
 
-    const ref = userActual
-      ? doc(firestore, "users", userActual)
-      : doc(firestore, "users", email.value.toLowerCase().replace(/[^a-z0-9]/g, "_"));
+    const rolePayload = {
+      isSuperUser: roleToSave === "superAdmin",
+      isAdmin: roleToSave === "admin",
+      tipoUsuario: roleToSave,
+    };
 
-    const data = {
+    // decidir id: si editando usamos userActual (doc id); si creando, usamos sanitize del email
+    const docId = userActual ? userActual : sanitizeId(email.value);
+
+    const docRef = doc(firestore, "users", docId);
+
+    const payload = {
       nombre: nombre.value.trim(),
       email: email.value.trim(),
       telefono: telefono.value.trim(),
       cargo: cargo.value.trim(),
       empresa: empresa.value.trim(),
-      tipoUsuario: tipoUsuario.value,
       updatedAt: new Date().toISOString(),
+      isActive: true,
+      ...rolePayload,
     };
 
-    await setDoc(ref, data, { merge: true });
-    alert("✅ Usuario guardado / actualizado correctamente.");
+    // Firestore: guardar/merge
+    await setDoc(docRef, payload, { merge: true });
+
+    // Realtime DB: sincronizar '/usuarios/{docId}'
+    try {
+      const rtdbPath = `/usuarios/${docId}`;
+      await rtdbSet(rtdbRef(rtdb, rtdbPath), {
+        id: docId,
+        nombre: payload.nombre,
+        email: payload.email,
+        telefono: payload.telefono,
+        cargo: payload.cargo,
+        empresa: payload.empresa,
+        tipoUsuario: payload.tipoUsuario,
+        isAdmin: payload.isAdmin || false,
+        isSuperUser: payload.isSuperUser || false,
+        isActive: payload.isActive,
+        updatedAt: Date.now(),
+      });
+    } catch (err) {
+      console.error("Error escribiendo en RTDB:", err);
+      alert("⚠️ Usuario guardado en Firestore, pero hubo problema al sincronizar con Realtime DB.");
+      return;
+    }
+
+    alert("✅ Datos guardados correctamente (Firestore + Realtime DB).");
+
+    // reset form UI
     form.reset();
     uid.value = "";
     userActual = null;
     tipoUsuario.value = "usuario";
   };
 
-  // ==============================
-  // NUEVO FORM
-  // ==============================
+  // =====================================================
+  // NUEVO
+  // =====================================================
   document.getElementById("btnNuevo").onclick = () => {
+    if (currentUserRole === "usuario") return alert("❌ No puedes crear usuarios.");
     form.reset();
     uid.value = "";
     userActual = null;
     tipoUsuario.value = "usuario";
   };
 
-  // ==============================
-  // NAVEGACIÓN
-  // ==============================
+  // =====================================================
+  // NAVEGACIÓN / UI
+  // =====================================================
   document.querySelectorAll(".ms-nav button").forEach((btn) => {
     btn.onclick = () => navigate(btn.dataset.view);
   });
 
-  document.getElementById("toggleTheme").onclick = () =>
-    document.body.classList.toggle("dark-mode");
+  document.getElementById("toggleTheme").onclick = () => document.body.classList.toggle("dark-mode");
 
   document.getElementById("logoutBtn").onclick = async () => {
     await signOut(auth);
@@ -279,3 +504,27 @@ export function showDatoDelUsuario() {
 
   document.getElementById("backBtn").onclick = () => navigate("user");
 }
+
+/*
+  NOTAS IMPORTANTES SOBRE AUTH (crear usuarios en Firebase Auth)
+  ------------------------------------------------------------
+  - Por seguridad la eliminación de usuarios en Firebase Auth NO se puede
+    ejecutar desde cliente (solo Admin SDK o Cloud Function con credenciales).
+  - También crear usuarios en Auth desde cliente con createUserWithEmailAndPassword
+    "inicia sesión" como ese nuevo usuario (rompe sesión del admin), por eso NO
+    es recomendable hacerlo directamente desde la app principal.
+  - Recomendación: implementar una Cloud Function o endpoint protegido (Admin SDK)
+    que el SuperAdmin pueda invocar (por ejemplo con un token de servidor) para:
+      * crear usuario en Auth
+      * eliminar usuario en Auth (si es necesario)
+    Ejemplo de payload que tu función admin esperaría:
+      { email, password, displayName, phoneNumber, customClaims }
+
+  EJEMPLO (pseudo) de llamada a tu Cloud Function (debes implementar la función):
+  async function createAuthUserServer(payload) {
+    // fetch('https://us-central1-TU_PROYECTO.cloudfunctions.net/createUser', { method: 'POST', body: JSON.stringify(payload), headers: { 'Authorization': 'Bearer ...' }})
+  }
+
+  - Si quieres que implemente el código del endpoint (Cloud Function) para crear usuarios
+    en Auth de forma segura, dímelo y preparo el ejemplo (Node.js Admin SDK).
+*/

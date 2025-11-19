@@ -1,4 +1,4 @@
-// Configuración e inicialización de Firebase
+// firebaseConfig.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
@@ -19,4 +19,5 @@ export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
+
 export { ref, onValue, set, remove, get, onAuthStateChanged };

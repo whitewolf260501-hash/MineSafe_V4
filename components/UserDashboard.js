@@ -37,6 +37,8 @@ export function showUserDashboard() {
         <button data-view="history">📜 Historial</button>
         <button data-view="manager">🗂️ Manage</button>
         <button data-view="usuarios">👥 Usuarios</button>
+        <button data-view="devicelive">📡 Datos del Dispositivo</button>
+
         <button data-view="graficos">📊 Gráficos</button>
         <button data-view="geolocalizacion">📍 Mapa</button>
       </nav>

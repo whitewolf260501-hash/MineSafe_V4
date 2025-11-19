@@ -704,3 +704,16 @@ body.dark-mode {
   transform: translateY(-2px);
   opacity: 0.9;
 }
+.device-live-card {
+    background: #1c1c1c;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px #0f0;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.device-live-card .dato {
+    font-size: 20px;
+    margin: 8px 0;
+}

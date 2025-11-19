@@ -1,31 +1,42 @@
 // ================================================
-// roleManager.js — Control centralizado de roles
+// roleManager.js — Sistema de roles unificado
 // ================================================
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { firestore } from "../firebaseConfig.js";
 
-// 🔹 Carga el rol del usuario actual
+// ------------------------------------------------
+// OBTENER ROL REAL DEL USUARIO
+// ------------------------------------------------
 export async function getUserRole(uid) {
   try {
     const ref = doc(firestore, "users", uid);
     const snap = await getDoc(ref);
+
     if (!snap.exists()) return "usuario";
     const data = snap.data();
-    if (data.isSuperUser || data.tipoUsuario === "superuser") return "superuser";
+
+    // NORMALIZACIÓN DE TODAS LAS VARIANTES
+    if (data.isSuperUser || data.tipoUsuario === "superAdmin") return "superAdmin";
     if (data.isAdmin || data.tipoUsuario === "admin") return "admin";
+
     return data.tipoUsuario || "usuario";
+
   } catch (e) {
     console.error("Error al obtener rol:", e);
     return "usuario";
   }
 }
 
-// 🔹 Verifica si el usuario tiene permisos para una acción
+// ------------------------------------------------
+// VALIDAR PERMISOS
+// ------------------------------------------------
 export function canPerform(role, action) {
+
   const permissions = {
-    superuser: ["create", "edit", "delete", "view"],
+    superAdmin: ["create", "edit", "delete", "view"],
     admin: ["create", "edit", "view"],
-    usuario: ["view"],
+    usuario: ["view"]
   };
+
   return permissions[role]?.includes(action);
 }
