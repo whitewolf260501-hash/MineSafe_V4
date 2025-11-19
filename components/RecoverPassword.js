@@ -14,16 +14,17 @@ export function showRecoverPassword() {
         <h1>Recuperar contraseña</h1>
         <p class="subtitle">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
 
-        <input id="emailRecover" type="email" placeholder="Correo electrónico" class="form-control" />
+        <input id="emailRecover" type="email" placeholder="Correo electrónico" class="form-control mt-2" />
 
-        <button id="btnRecover" class="btn-primary mt-3">Enviar enlace</button>
-        <p id="message" class="mt-2"></p>
+        <button id="btnRecover" class="btn-primary mt-3 w-100">Enviar enlace</button>
 
-        <div class="links">
+        <p id="message" class="mt-2 text-center"></p>
+
+        <div class="links text-center mt-3">
           <p><a id="goLogin" href="#">Volver al inicio de sesión</a></p>
         </div>
 
-        <footer class="login-footer">© 2025 Minesafe 2</footer>
+        <footer class="login-footer text-center mt-4">© 2025 Minesafe 2</footer>
       </div>
     </div>
   `;
@@ -45,9 +46,7 @@ export function showRecoverPassword() {
     }
 
     try {
-      // Enviar correo sin reCAPTCHA
       await sendPasswordResetEmail(auth, email);
-
       messageEl.textContent = "Se ha enviado un enlace de recuperación a tu correo ✔";
       messageEl.style.color = "green";
       emailInput.value = "";
