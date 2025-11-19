@@ -1,4 +1,3 @@
-// datoDelUsuario.js
 // ================================================
 // DatoDelUsuario.js — Gestión avanzada de usuarios
 // ================================================
@@ -224,21 +223,30 @@ export function showDatoDelUsuario() {
   let currentUid = null;
 
   // =====================================================
-  // DETECTAR USUARIO LOGEADO
+  // DETECTAR USUARIO LOGEADO + BLOQUEO SI DESACTIVADO
   // =====================================================
   onAuthStateChanged(auth, async (user) => {
     if (!user) return navigate("login");
 
     currentUid = user.uid;
     currentUserRole = await getUserRoleReal(user.uid);
+
+    // Obtener info del usuario desde Firestore
+    const userRef = doc(firestore, "users", user.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+
+    // Bloquear si la cuenta está desactivada
+    if (data.isActive === false) {
+      alert("❌ Tu cuenta está desactivada. Contacta a un administrador.");
+      await signOut(auth);
+      return navigate("login");
+    }
+
     userFormContainer.style.display = "block";
 
     if (currentUserRole === "usuario") {
       roleRow.style.display = "none";
-
-      const ref = doc(firestore, "users", user.uid);
-      const snap = await getDoc(ref);
-      const data = snap.exists() ? snap.data() : {};
 
       uid.value = user.uid;
       nombre.value = data.nombre || "";
@@ -480,6 +488,7 @@ export function showDatoDelUsuario() {
   document.getElementById("logoutBtn").onclick = async () => { await signOut(auth); navigate("login"); };
   document.getElementById("backBtn").onclick = () => navigate("user");
 }
+
 
 /*
   NOTAS IMPORTANTES SOBRE AUTH (crear usuarios en Firebase Auth)

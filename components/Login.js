@@ -1,7 +1,7 @@
 // components/Login.js
-import { auth } from "../firebaseConfig.js";
-import { signInWithEmailAndPassword }
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { auth, firestore } from "../firebaseConfig.js";
+import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { navigate } from "../app.js";
 
 export function showLogin() {
@@ -42,10 +42,28 @@ export function showLogin() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // Iniciar sesión
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
 
-      // Redirección según usuario
-      if (email === "admin@minesafe.com") navigate("admin");
+      // Verificar si el usuario está activo en Firestore
+      const snap = await getDoc(doc(firestore, "users", uid));
+      if (!snap.exists()) {
+        alert("❌ Usuario no registrado en la base de datos.");
+        await signOut(auth);
+        return;
+      }
+
+      const data = snap.data();
+
+      if (data.isActive === false) {
+        alert("❌ Tu cuenta está desactivada. Contacta a un administrador.");
+        await signOut(auth);
+        return;
+      }
+
+      // Redirección según rol
+      if (data.isSuperUser || data.isAdmin) navigate("admin");
       else navigate("user");
 
     } catch (error) {
