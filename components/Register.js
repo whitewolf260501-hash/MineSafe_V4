@@ -1,6 +1,9 @@
 // components/Register.js
 import { auth, firestore, db as realtimeDB } from "../firebaseConfig.js";
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { 
+  createUserWithEmailAndPassword,
+  sendEmailVerification
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 import { navigate } from "../app.js";
@@ -27,13 +30,25 @@ export function showRegister() {
   // Navegar a Login
   document.getElementById("goLogin").onclick = () => navigate("login");
 
+  // Función para validar formato de email
+  function validarEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  }
+
   document.getElementById("btnRegister").onclick = async () => {
     const nombre = document.getElementById("nombre")?.value.trim() || "";
     const telefono = document.getElementById("telefono")?.value.trim() || "";
     const email = document.getElementById("email")?.value.trim() || "";
     const password = document.getElementById("password")?.value || "";
 
-    if (!email || !password) return alert("Debe ingresar correo y contraseña.");
+    // Validaciones
+    if (!email || !validarEmail(email)) {
+      return alert("Debe ingresar un correo válido.");
+    }
+    if (!password) {
+      return alert("Debe ingresar una contraseña.");
+    }
 
     let uid;
     try {
@@ -41,6 +56,11 @@ export function showRegister() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       uid = cred.user.uid;
       console.log("Usuario Auth creado:", uid);
+
+      // Enviar correo de verificación
+      await sendEmailVerification(cred.user);
+      alert("Se ha enviado un correo de verificación. Confirma tu correo antes de iniciar sesión.");
+
     } catch (error) {
       console.error("Error Auth:", error);
       return alert("Error al crear usuario: " + error.message);
@@ -80,7 +100,7 @@ export function showRegister() {
         isActive: true,
         createdAt: Date.now(),
       };
-      await set(ref(realtimeDB, `usuarios/${uid}`), realtimePayload); // <- rama corregida
+      await set(ref(realtimeDB, `usuarios/${uid}`), realtimePayload);
       console.log("RealtimeDB OK en 'usuarios'");
     } catch (error) {
       console.error("Error RealtimeDB:", error);
@@ -88,7 +108,6 @@ export function showRegister() {
     }
 
     // Registro terminado
-    alert("Usuario creado correctamente ✔");
     navigate("login");
   };
 }
