@@ -19,6 +19,9 @@ import {
 import {
   onAuthStateChanged,
   signOut,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 import {
@@ -91,7 +94,6 @@ export function showDatoDelUsuario() {
         <img src="assets/images/logo.png" alt="Minesafe Logo" class="ms-logo" />
         <h1>Minesafe</h1>
       </div>
-
       <nav class="ms-nav">
         <button data-view="user">🏠 Inicio</button>
         <button data-view="userform">👤 Datos</button>
@@ -107,7 +109,6 @@ export function showDatoDelUsuario() {
         <button data-view="graficos">📊 Gráficos</button>
         <button data-view="geolocalizacion">📍 Mapa</button>
       </nav>
-
       <footer class="ms-footer">
         <button id="logoutBtn" class="btn-logout">🚪 Cerrar sesión</button>
         <small>© 2025 Minesafe</small>
@@ -161,6 +162,17 @@ export function showDatoDelUsuario() {
               <input id="empresa" class="form-control" />
             </div>
 
+            <div class="row split">
+              <div>
+                <label>Contraseña Actual</label>
+                <input type="password" id="currentPassword" class="form-control" placeholder="********" />
+              </div>
+              <div>
+                <label>Nueva Contraseña</label>
+                <input type="password" id="newPassword" class="form-control" placeholder="********" />
+              </div>
+            </div>
+
             <div class="row" id="roleRow" style="display:none;">
               <label>Tipo de Usuario</label>
               <select id="tipoUsuario" class="form-control">
@@ -200,12 +212,14 @@ export function showDatoDelUsuario() {
   const empresa = document.getElementById("empresa");
   const tipoUsuario = document.getElementById("tipoUsuario");
   const roleRow = document.getElementById("roleRow");
+  const currentPassword = document.getElementById("currentPassword");
+  const newPassword = document.getElementById("newPassword");
 
   const form = document.getElementById("userForm");
   const usersList = document.getElementById("usersList");
   const userFormContainer = document.getElementById("userFormContainer");
 
-  let userActual = null; // doc id (string) cuando editamos
+  let userActual = null;
   let currentUserRole = null;
   let currentUid = null;
 
@@ -217,13 +231,11 @@ export function showDatoDelUsuario() {
 
     currentUid = user.uid;
     currentUserRole = await getUserRoleReal(user.uid);
-
-    // always show the form container (role controls inside)
     userFormContainer.style.display = "block";
 
     if (currentUserRole === "usuario") {
       roleRow.style.display = "none";
-      // Autocompletar datos propios
+
       const ref = doc(firestore, "users", user.uid);
       const snap = await getDoc(ref);
       const data = snap.exists() ? snap.data() : {};
@@ -237,37 +249,33 @@ export function showDatoDelUsuario() {
 
       userActual = user.uid;
     } else {
-      // admin / superAdmin: show role controls
       roleRow.style.display = "block";
     }
   });
 
   // =====================================================
-  // LISTAR USUARIOS (real-time Firestore)
+  // LISTAR USUARIOS
   // =====================================================
   onSnapshot(collection(firestore, "users"), (snapshot) => {
-    if (!currentUserRole) return; // wait until role resolved
+    if (!currentUserRole) return;
     usersList.innerHTML = "";
 
     snapshot.forEach((docu) => {
       const data = docu.data();
       const id = docu.id;
 
-      // Usuario normal sólo ve su propio registro
       if (currentUserRole === "usuario" && id !== currentUid) return;
 
-      // determinar rol visual
-      const rol = data.isSuperUser === true ? "superAdmin" : data.isAdmin === true ? "admin" : "usuario";
-
+      const rol = data.isSuperUser ? "superAdmin" : data.isAdmin ? "admin" : "usuario";
       const canEdit = currentUserRole === "superAdmin" || currentUserRole === "admin" || (currentUserRole === "usuario" && id === currentUid);
       const canDelete = currentUserRole === "superAdmin";
       const canToggle = currentUserRole === "superAdmin" || currentUserRole === "admin";
 
-     const isActive = data.isActive !== false; // default true
-const estadoTexto = isActive ? "Activo" : "Inactivo";
-const estadoColor = isActive ? "#22bb33" : "#ff8800"; // verde si activo, naranja/rojo si inactivo
-const botonColorStyle = isActive ? "background:#ff8800;" : "background:#22bb33;"; // rojo si activo (para desactivar), verde si inactivo (para activar)
-const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
+      const isActive = data.isActive !== false;
+      const estadoTexto = isActive ? "Activo" : "Inactivo";
+      const estadoColor = isActive ? "#22bb33" : "#ff8800";
+      const botonColorStyle = isActive ? "background:#ff8800;" : "background:#22bb33;";
+      const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
 
       const div = document.createElement("div");
       div.className = "user-card glass animate-fade";
@@ -308,11 +316,10 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
         cargo.value = data.cargo || "";
         empresa.value = data.empresa || "";
 
-        // si currentUserRole es superAdmin permitimos cambiar entre admin/usuario
         if (currentUserRole === "superAdmin") {
-          tipoUsuario.value = data.isSuperUser === true ? "superAdmin" : data.isAdmin === true ? "admin" : "usuario";
+          tipoUsuario.value = data.isSuperUser ? "superAdmin" : data.isAdmin ? "admin" : "usuario";
         } else if (currentUserRole === "admin") {
-          tipoUsuario.value = "usuario"; // admin no puede ascender a administradores
+          tipoUsuario.value = "usuario";
         }
 
         userActual = id;
@@ -329,37 +336,21 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
         const snap = await getDoc(ref);
         if (!snap.exists()) return;
         const data = snap.data();
+        const nuevoEstado = !data.isActive;
 
-        const nuevoEstado = data.isActive === false; // si era falso -> true, si era true/undefined -> false
+        await updateDoc(ref, { isActive: nuevoEstado, updatedAt: new Date().toISOString() });
 
-        // Firestore
-        await updateDoc(ref, {
-          isActive: nuevoEstado,
-          updatedAt: new Date().toISOString(),
-        });
-
-        // Realtime DB
         try {
-          const rtdbPath = `/usuarios/${id}`;
-          await rtdbUpdate(rtdbRef(rtdb, rtdbPath), {
+          await rtdbUpdate(rtdbRef(rtdb, `/usuarios/${id}`), { isActive: nuevoEstado, updatedAt: Date.now() });
+        } catch {
+          await rtdbSet(rtdbRef(rtdb, `/usuarios/${id}`), {
+            email: data.email || "",
+            nombre: data.nombre || "",
+            telefono: data.telefono || "",
+            empresa: data.empresa || "",
             isActive: nuevoEstado,
             updatedAt: Date.now(),
           });
-        } catch (err) {
-          // si no existe en RTDB, crear con mínimos
-          try {
-            const rtdbPath = `/usuarios/${id}`;
-            await rtdbSet(rtdbRef(rtdb, rtdbPath), {
-              email: data.email || "",
-              nombre: data.nombre || "",
-              telefono: data.telefono || "",
-              empresa: data.empresa || "",
-              isActive: nuevoEstado,
-              updatedAt: Date.now(),
-            });
-          } catch (e) {
-            console.error("RTDB update/create error:", e);
-          }
         }
 
         alert(`✔ Usuario ${nuevoEstado ? "activado" : "desactivado"} correctamente.`);
@@ -367,57 +358,38 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
     );
 
     // -----------------------
-    // DELETE (Firestore + RTDB)
+    // DELETE
     // -----------------------
     document.querySelectorAll(".btn-del").forEach((btn) =>
       btn.addEventListener("click", async () => {
-        if (currentUserRole !== "superAdmin") {
-          alert("❌ Solo el SuperAdmin puede eliminar usuarios.");
-          return;
-        }
-
-        if (!confirm("¿Eliminar este usuario definitivamente? (Se eliminará de Firestore y Realtime DB)")) return;
+        if (currentUserRole !== "superAdmin") return alert("❌ Solo el SuperAdmin puede eliminar usuarios.");
+        if (!confirm("¿Eliminar este usuario definitivamente?")) return;
 
         const id = btn.dataset.id;
-        try {
-          await deleteDoc(doc(firestore, "users", id));
-        } catch (err) {
-          console.error("Firestore delete error:", err);
-        }
-
-        try {
-          await rtdbRemove(rtdbRef(rtdb, `/usuarios/${id}`));
-        } catch (err) {
-          console.error("RTDB remove error:", err);
-        }
-
+        try { await deleteDoc(doc(firestore, "users", id)); } catch (e) { console.error(e); }
+        try { await rtdbRemove(rtdbRef(rtdb, `/usuarios/${id}`)); } catch (e) { console.error(e); }
         alert("✅ Usuario eliminado de Firestore y Realtime DB (Auth no puede borrarse desde cliente).");
       })
     );
   });
 
   // =====================================================
-  // GUARDAR / ACTUALIZAR (Firestore + Realtime DB)
+  // GUARDAR / ACTUALIZAR + CAMBIO DE CONTRASEÑA
   // =====================================================
   form.onsubmit = async (e) => {
     e.preventDefault();
 
-    const allowed =
-      currentUserRole === "superAdmin" ||
-      currentUserRole === "admin" ||
-      (currentUserRole === "usuario" && userActual === currentUid);
-
+    const allowed = currentUserRole === "superAdmin" || currentUserRole === "admin" || (currentUserRole === "usuario" && userActual === currentUid);
     if (!allowed) return alert("❌ No tienes permiso para editar.");
 
     // Roles
     let roleToSave = "usuario";
     if (currentUserRole === "superAdmin") roleToSave = tipoUsuario.value || "usuario";
-    if (currentUserRole === "admin") roleToSave = "usuario"; // admin solo crea usuarios normales
+    if (currentUserRole === "admin") roleToSave = "usuario";
 
-    // evitar crear 2do superAdmin
     const superAdminExists = await existeSuperAdmin();
     if (roleToSave === "superAdmin" && superAdminExists) {
-      alert("❌ Ya existe un SuperAdmin. No se puede crear otro.");
+      alert("❌ Ya existe un SuperAdmin.");
       return;
     }
 
@@ -427,9 +399,7 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
       tipoUsuario: roleToSave,
     };
 
-    // decidir id: si editando usamos userActual (doc id); si creando, usamos sanitize del email
     const docId = userActual ? userActual : sanitizeId(email.value);
-
     const docRef = doc(firestore, "users", docId);
 
     const payload = {
@@ -443,10 +413,8 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
       ...rolePayload,
     };
 
-    // Firestore: guardar/merge
     await setDoc(docRef, payload, { merge: true });
 
-    // Realtime DB: sincronizar '/usuarios/{docId}'
     try {
       const rtdbPath = `/usuarios/${docId}`;
       await rtdbSet(rtdbRef(rtdb, rtdbPath), {
@@ -462,15 +430,28 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
         isActive: payload.isActive,
         updatedAt: Date.now(),
       });
-    } catch (err) {
-      console.error("Error escribiendo en RTDB:", err);
+    } catch {
       alert("⚠️ Usuario guardado en Firestore, pero hubo problema al sincronizar con Realtime DB.");
-      return;
+    }
+
+    // CAMBIO DE CONTRASEÑA
+    const currentPass = currentPassword.value;
+    const newPass = newPassword.value;
+
+    if (currentPass && newPass && auth.currentUser.uid === currentUid) {
+      try {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await updatePassword(auth.currentUser, newPass);
+        alert("🔒 Contraseña actualizada correctamente.");
+      } catch (err) {
+        console.error("Error cambiando contraseña:", err);
+        alert("❌ Error al actualizar contraseña. Verifica la contraseña actual.");
+      }
     }
 
     alert("✅ Datos guardados correctamente (Firestore + Realtime DB).");
 
-    // reset form UI
     form.reset();
     uid.value = "";
     userActual = null;
@@ -496,12 +477,7 @@ const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
   });
 
   document.getElementById("toggleTheme").onclick = () => document.body.classList.toggle("dark-mode");
-
-  document.getElementById("logoutBtn").onclick = async () => {
-    await signOut(auth);
-    navigate("login");
-  };
-
+  document.getElementById("logoutBtn").onclick = async () => { await signOut(auth); navigate("login"); };
   document.getElementById("backBtn").onclick = () => navigate("user");
 }
 

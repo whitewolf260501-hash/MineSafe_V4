@@ -1,8 +1,9 @@
 // firebaseConfig.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getDatabase, ref, onValue, set, remove, get, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFunctions } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD744Q06qmoq3u8R43p-sgfa60xBRztOs4",
@@ -15,9 +16,14 @@ const firebaseConfig = {
   measurementId: "G-Z6VB2Y3SN7",
 };
 
+// Inicializar app
 export const app = initializeApp(firebaseConfig);
+
+// Servicios
 export const db = getDatabase(app);
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
+export const functions = getFunctions(app);
 
-export { ref, onValue, set, remove, get, onAuthStateChanged };
+// Re-exportar funciones útiles
+export { ref, onValue, set, remove, get, update, onAuthStateChanged };
