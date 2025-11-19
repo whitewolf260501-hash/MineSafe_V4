@@ -1,3 +1,4 @@
+//identifier: functions/index.js
 /**
  * Firebase Functions — Usuarios:
  * ✔ Registro automático en Firestore + Realtime DB

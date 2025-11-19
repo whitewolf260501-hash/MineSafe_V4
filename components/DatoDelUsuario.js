@@ -263,11 +263,11 @@ export function showDatoDelUsuario() {
       const canDelete = currentUserRole === "superAdmin";
       const canToggle = currentUserRole === "superAdmin" || currentUserRole === "admin";
 
-      const isActive = data.isActive !== false; // default true
-      const estadoTexto = isActive ? "Activo" : "Inactivo";
-      const estadoColor = isActive ? "#22bb33" : "#ff8800";
-      const botonColorStyle = isActive ? "background:#22bb33;" : "background:#ff8800;";
-      const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
+     const isActive = data.isActive !== false; // default true
+const estadoTexto = isActive ? "Activo" : "Inactivo";
+const estadoColor = isActive ? "#22bb33" : "#ff8800"; // verde si activo, naranja/rojo si inactivo
+const botonColorStyle = isActive ? "background:#ff8800;" : "background:#22bb33;"; // rojo si activo (para desactivar), verde si inactivo (para activar)
+const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
 
       const div = document.createElement("div");
       div.className = "user-card glass animate-fade";

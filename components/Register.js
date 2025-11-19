@@ -21,16 +21,22 @@ export function showRegister() {
       <input id="password" placeholder="Contraseña" type="password" class="form-control mt-2" />
 
       <button id="btnRegister" class="btn btn-primary w-100 mt-3">Registrar</button>
+      <p id="message" class="mt-2"></p>
+
       <p class="mt-3">¿Ya tienes cuenta?
         <a id="goLogin" class="text-link">Iniciar sesión</a>
       </p>
     </div>
   `;
 
+  const messageEl = document.getElementById("message");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
   // Navegar a Login
   document.getElementById("goLogin").onclick = () => navigate("login");
 
-  // Función para validar formato de email
+  // Validar formato de email
   function validarEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email.toLowerCase());
@@ -39,34 +45,45 @@ export function showRegister() {
   document.getElementById("btnRegister").onclick = async () => {
     const nombre = document.getElementById("nombre")?.value.trim() || "";
     const telefono = document.getElementById("telefono")?.value.trim() || "";
-    const email = document.getElementById("email")?.value.trim() || "";
-    const password = document.getElementById("password")?.value || "";
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
 
     // Validaciones
     if (!email || !validarEmail(email)) {
-      return alert("Debe ingresar un correo válido.");
+      messageEl.textContent = "Debe ingresar un correo válido.";
+      messageEl.style.color = "red";
+      return;
     }
     if (!password) {
-      return alert("Debe ingresar una contraseña.");
+      messageEl.textContent = "Debe ingresar una contraseña.";
+      messageEl.style.color = "red";
+      return;
     }
 
     let uid;
     try {
-      // Crear usuario en Firebase Auth
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       uid = cred.user.uid;
       console.log("Usuario Auth creado:", uid);
 
       // Enviar correo de verificación
       await sendEmailVerification(cred.user);
-      alert("Se ha enviado un correo de verificación. Confirma tu correo antes de iniciar sesión.");
+      messageEl.textContent = "Se ha enviado un correo de verificación ✔ Confirma tu correo antes de iniciar sesión.";
+      messageEl.style.color = "green";
 
     } catch (error) {
       console.error("Error Auth:", error);
-      return alert("Error al crear usuario: " + error.message);
+      if (error.code === "auth/email-already-in-use") {
+        messageEl.textContent = "Este correo ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.";
+        messageEl.style.color = "red";
+      } else {
+        messageEl.textContent = "Error al crear usuario: " + error.message;
+        messageEl.style.color = "red";
+      }
+      return;
     }
 
-    // Crear documento en Firestore (/users/{uid})
+    // Crear documento en Firestore
     try {
       const firestorePayload = {
         uid,
@@ -85,10 +102,11 @@ export function showRegister() {
       console.log("Firestore OK");
     } catch (error) {
       console.error("Error Firestore:", error);
-      alert("Usuario creado en Auth, pero no se pudo guardar en Firestore.");
+      messageEl.textContent += " ⚠ No se pudo guardar en Firestore.";
+      messageEl.style.color = "orange";
     }
 
-    // Guardar datos en Realtime Database (/usuarios/{uid})
+    // Guardar datos en Realtime Database
     try {
       const realtimePayload = {
         email,
@@ -104,10 +122,14 @@ export function showRegister() {
       console.log("RealtimeDB OK en 'usuarios'");
     } catch (error) {
       console.error("Error RealtimeDB:", error);
-      alert("Usuario creado en Auth, pero no se pudo guardar en Realtime Database.");
+      messageEl.textContent += " ⚠ No se pudo guardar en Realtime Database.";
+      messageEl.style.color = "orange";
     }
 
-    // Registro terminado
-    navigate("login");
+    // Limpiar inputs
+    emailInput.value = "";
+    passwordInput.value = "";
+    document.getElementById("nombre").value = "";
+    document.getElementById("telefono").value = "";
   };
 }
