@@ -45,30 +45,26 @@ export function showRecoverPassword() {
       return;
     }
 
+    // Mostrar mensaje de carga mientras se procesa
+    messageEl.textContent = "Procesando solicitud...";
+    messageEl.style.color = "blue";
+
     try {
       await sendPasswordResetEmail(auth, email);
-      messageEl.textContent = "Se ha enviado un enlace de recuperación a tu correo ✔";
+
+      // Mensaje seguro para producción: no filtra si el usuario existe o no
+      messageEl.textContent = "Si el correo existe en nuestro sistema, se ha enviado un enlace de recuperación ✔";
       messageEl.style.color = "green";
       emailInput.value = "";
     } catch (error) {
       console.error("Error al enviar correo:", error);
 
-      // Mostrar mensajes claros según el tipo de error
-      switch (error.code) {
-        case "auth/invalid-email":
-          messageEl.textContent = "El correo ingresado no es válido.";
-          break;
-        case "auth/user-not-found":
-          messageEl.textContent = "No se encontró una cuenta con ese correo.";
-          break;
-        case "auth/too-many-requests":
-          messageEl.textContent = "Has enviado demasiadas solicitudes. Intenta más tarde.";
-          break;
-        default:
-          messageEl.textContent = "Ocurrió un error al enviar el correo. Intenta nuevamente.";
-      }
+      // Mensaje seguro para producción, aunque haya error
+      messageEl.textContent = "Si el correo existe en nuestro sistema, se ha enviado un enlace de recuperación ✔";
+      messageEl.style.color = "green";
 
-      messageEl.style.color = "red";
+      // Opcional: para desarrollo, puedes ver el error completo en consola
+      // console.error("Detalle del error:", error);
     }
   };
 }
