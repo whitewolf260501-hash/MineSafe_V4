@@ -1,147 +1,85 @@
-// ================================================ 
-// app.js — Navegación principal con navbar global estilizada
-// ================================================
-import { showLogin } from "./components/Login.js";
-import { showRegister } from "./components/Register.js";
-import { showUserDashboard } from "./components/UserDashboard.js";
-import { showAdminDashboard } from "./components/AdminDashboard.js";
-import { showAlerts } from "./components/AlertsView.js";
-import { showDevices } from "./components/DeviceView.js";
-import { showUserForm } from "./components/UserForm.js";
-import { showTipoMinaForm } from "./components/TipoMinaForm.js";
-import { showGeoEmpresaForm } from "./components/GeoEmpresaForm.js";
-import { showPagina1 } from "./components/Pagina1.js";
-import { showPagina2 } from "./components/Pagina2.js";
-import { showUsuarios } from "./components/Usuarios.js";
-import { showGraficos } from "./components/Graficos.js";
-import { showGeolocalizacion } from "./components/Geolocalizacion.js";
-import { showHistoryManagerPage } from "./components/historyManager.js";
-import { showRecoverPassword } from "./components/RecoverPassword.js";
-import { renderNavbar } from "./components/navbar.js";
-import { auth } from "./firebaseConfig.js";
+// =====================================================
+// app.js - Enrutador principal Minesafe 2
+// =====================================================
 
-import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
+import { auth, onAuthStateChanged } from "./firebaseConfig.js";
+import { renderNavbar } from "./components/Navbar.js";
 
-// ==== carga opcional ====
-let showAllDevicesFunc = null;
+// Vistas
+import { renderLogin } from "./views/login.js";
+import { renderUser } from "./views/user.js";
+import { renderEmpresa } from "./views/empresa.js";
+import { renderDevices } from "./views/devices.js";
 
-try {
-  const module = await import("./components/deviceHistory.js");
-  showAllDevicesFunc = module.showAllDevices;
-} catch (error) {
-  console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
-}
-
+// Root donde se renderiza TODO
 const root = document.getElementById("root");
 
-// =============================================
-// Función principal de navegación
-// =============================================
-export function navigate(view) {
+// ====== Sistema de rutas ===================================
+const routes = {
+  login: renderLogin,
+  user: renderUser,
+  empresa: renderEmpresa,
+  devices: renderDevices,
+};
 
-  const header = document.querySelector("header");
-  const footer = document.querySelector("footer");
-
-  root.innerHTML = "";
-
-  // ===== VISTAS SIN NAVBAR =====
-  if (["login", "register", "recoverPassword"].includes(view)) {
-
-    header.classList.remove("hidden");
-    footer.classList.add("hidden");
-
-    if (view === "login") showLogin();
-    if (view === "register") showRegister();
-    if (view === "recoverPassword") showRecoverPassword();
-
+export function navigate(routeName) {
+  if (!routes[routeName]) {
+    console.error("Ruta no existe:", routeName);
     return;
   }
 
-  // ===== VISTAS CON NAVBAR =====
-  header.classList.add("hidden");
-  footer.classList.remove("hidden");
-
-  const navbar = renderNavbar();
-  root.appendChild(navbar);
-
-  const content = document.createElement("div");
-  content.className = "page-content";
-  root.appendChild(content);
-
-  switch (view) {
-    case "user":
-      showUserDashboard();
-      break;
-
-    case "admin":
-      showAdminDashboard();
-      break;
-
-    case "alerts":
-      showAlerts();
-      break;
-
-    case "devices":
-      showDevices();
-      break;
-
-    case "userform":
-      showUserForm();
-      break;
-
-    case "tipomina":
-      showTipoMinaForm();
-      break;
-
-    case "geoempresa":
-      showGeoEmpresaForm();
-      break;
-
-    case "geominaempresa":
-      import("./components/GeoMinaEmpresaDashboard.js")
-        .then(m => m.showGeoMinaEmpresaDashboard())
-        .catch(err => console.error(err));
-      break;
-
-    case "datosdelusuario":
-      showDatoDelUsuario();
-      break;
-
-    case "usuarios":
-      showUsuarios();
-      break;
-
-    case "graficos":
-      showGraficos();
-      break;
-
-    case "geolocalizacion":
-      showGeolocalizacion();
-      break;
-
-    case "pagina1":
-      showPagina1();
-      break;
-
-    case "pagina2":
-      showPagina2();
-      break;
-
-    case "history":
-      if (showAllDevicesFunc) showAllDevicesFunc();
-      else content.innerHTML = "<p>⚠️ Historial no disponible.</p>";
-      break;
-
-    case "manager":
-      showHistoryManagerPage();
-      break;
-
-    default:
-      showLogin();
+  // Si la ruta es login → NO Navbar
+  if (routeName === "login") {
+    document.body.innerHTML = "";
+    document.body.appendChild(routes.login());
+    return;
   }
+
+  // Para rutas internas → Navbar + contenido
+  renderAppLayout();
+  routes[routeName](root);
 }
 
-// =============================================
-// Arranque
-// =============================================
-navigate("login");
+// ====== Layout principal (Navbar + Root) ====================
+function renderAppLayout() {
+  document.body.innerHTML = "";
+
+  // Header
+  const header = document.createElement("header");
+  header.innerHTML = `
+    <div class="text-center py-3 bg-light shadow-sm">
+      <h1 class="fw-bold">⚙️ Minesafe 2</h1>
+      <div id="userStatus" class="text-muted small"></div>
+    </div>
+  `;
+  document.body.appendChild(header);
+
+  // Navbar
+  document.body.appendChild(renderNavbar());
+
+  // Root principal
+  const main = document.createElement("main");
+  main.id = "root";
+  main.className = "mt-3";
+  document.body.appendChild(main);
+
+  // Footer
+  const footer = document.createElement("footer");
+  footer.className = "text-center py-4 text-muted small";
+  footer.textContent = "© 2025 Minesafe 2";
+  document.body.appendChild(footer);
+}
+
+// ========== Autenticación ================================
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    console.warn("Usuario NO autenticado. Enviando a login…");
+    navigate("login");
+    return;
+  }
+
+  console.log("Usuario autenticado:", user.email);
+
+  // Una vez logeado → dashboard
+  navigate("user");
+});
