@@ -20,10 +20,11 @@ import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
 import { auth } from "./firebaseConfig.js";
 
-// 🔹 Nueva importación
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
+// ==== carga opcional ====
 let showAllDevicesFunc = null;
+
 try {
   const module = await import("./components/deviceHistory.js");
   showAllDevicesFunc = module.showAllDevices;
@@ -33,20 +34,33 @@ try {
 
 const root = document.getElementById("root");
 
+// =============================================
+// Función principal de navegación
+// =============================================
 export function navigate(view) {
+
+  const header = document.querySelector("header");
+  const footer = document.querySelector("footer");
+
   root.innerHTML = "";
 
-  // Login, Registro y Recuperar → sin navbar
+  // ===== VISTAS SIN NAVBAR =====
   if (["login", "register", "recoverPassword"].includes(view)) {
-    document.querySelector("header").style.display = "flex";
+
+    header.classList.remove("hidden");
+    footer.classList.add("hidden");
+
     if (view === "login") showLogin();
     if (view === "register") showRegister();
     if (view === "recoverPassword") showRecoverPassword();
+
     return;
   }
 
-  // Oculta header y muestra navbar
-  document.querySelector("header").style.display = "none";
+  // ===== VISTAS CON NAVBAR =====
+  header.classList.add("hidden");
+  footer.classList.remove("hidden");
+
   const navbar = renderNavbar();
   root.appendChild(navbar);
 
@@ -55,40 +69,79 @@ export function navigate(view) {
   root.appendChild(content);
 
   switch (view) {
-    case "user": showUserDashboard(); break;
-    case "admin": showAdminDashboard(); break;
-    case "alerts": showAlerts(); break;
-    case "devices": showDevices(); break;
-    case "userform": showUserForm(); break;
-    case "tipomina": showTipoMinaForm(); break;
-    case "geoempresa": showGeoEmpresaForm(); break;
-
-    // 🔹 Nueva vista: Empresa & Mina
-    case "geominaempresa":
-      import("./components/GeoMinaEmpresaDashboard.js")
-        .then(module => module.showGeoMinaEmpresaDashboard())
-        .catch(err => console.error("Error cargando GeoMinaEmpresaDashboard:", err));
+    case "user":
+      showUserDashboard();
       break;
 
-    // 🔹 Nueva vista: Datos del Usuario
+    case "admin":
+      showAdminDashboard();
+      break;
+
+    case "alerts":
+      showAlerts();
+      break;
+
+    case "devices":
+      showDevices();
+      break;
+
+    case "userform":
+      showUserForm();
+      break;
+
+    case "tipomina":
+      showTipoMinaForm();
+      break;
+
+    case "geoempresa":
+      showGeoEmpresaForm();
+      break;
+
+    case "geominaempresa":
+      import("./components/GeoMinaEmpresaDashboard.js")
+        .then(m => m.showGeoMinaEmpresaDashboard())
+        .catch(err => console.error(err));
+      break;
+
     case "datosdelusuario":
       showDatoDelUsuario();
       break;
 
-    case "usuarios": showUsuarios(); break;
-    case "graficos": showGraficos(); break;
-    case "geolocalizacion": showGeolocalizacion(); break;
-    case "pagina1": showPagina1(); break;
-    case "pagina2": showPagina2(); break;
-    case "history":
-      showAllDevicesFunc
-        ? showAllDevicesFunc()
-        : (content.innerHTML = "<p>⚠️ Historial no disponible.</p>");
+    case "usuarios":
+      showUsuarios();
       break;
-    case "manager": showHistoryManagerPage(); break;
-    default: showLogin();
+
+    case "graficos":
+      showGraficos();
+      break;
+
+    case "geolocalizacion":
+      showGeolocalizacion();
+      break;
+
+    case "pagina1":
+      showPagina1();
+      break;
+
+    case "pagina2":
+      showPagina2();
+      break;
+
+    case "history":
+      if (showAllDevicesFunc) showAllDevicesFunc();
+      else content.innerHTML = "<p>⚠️ Historial no disponible.</p>";
+      break;
+
+    case "manager":
+      showHistoryManagerPage();
+      break;
+
+    default:
+      showLogin();
   }
 }
 
-// Arranque inicial
+// =============================================
+// Arranque
+// =============================================
 navigate("login");
