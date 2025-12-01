@@ -717,3 +717,20 @@ body.dark-mode {
     font-size: 20px;
     margin: 8px 0;
 }
+.business-card {
+  background: #111;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 10px;
+  border: 1px solid #333;
+}
+
+.estado {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.estado.activo { color: #00ff88; }
+.estado["por vencer"] { color: yellow; }
+.estado.vencido { color: red; }

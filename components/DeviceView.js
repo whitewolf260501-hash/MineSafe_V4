@@ -1,7 +1,7 @@
 // ================================================
-// DeviceView.js — Dispositivos, GeoMinaEmpresa, Geolocalización + Historial
+// DeviceView.js — Dispositivos, GeoMinaEmpresa, Geolocalización + Historial + Negocio/Arriendos
 // ================================================
-import { db, ref, onValue, set } from "../firebaseConfig.js";
+import { db, ref, onValue, set, update } from "../firebaseConfig.js"; // asumes que exportas set/update para RTDB
 import { navigate } from "../app.js";
 import { showHistoryManagerPage } from "./historyManager.js";
 
@@ -22,6 +22,7 @@ export function renderNavbar() {
       <button data-view="usuarios">👥 Usuarios</button>
       <button data-view="graficos">📊 Gráficos</button>
       <button data-view="geolocalizacion">📍 Mapa</button>
+      <button data-view="arriendos">📄 Arriendos</button>
     </div>
   `;
   nav.querySelectorAll("button").forEach(btn => {
@@ -65,11 +66,12 @@ export function showDevices() {
           <div class="card-body">
             <h5 class="card-title">Datos del Dispositivo</h5>
             <div id="deviceData">Cargando dispositivo...</div>
+            <div id="arriendoCard" style="margin-top:12px;"></div>
           </div>
         </div>
       </div>
 
-      <!-- CARD FORM GEO EMPRESA -->
+      <!-- CARD FORM GEO EMPRESA + BUSINESS -->
       <div class="col-lg-4 col-md-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-body">
@@ -99,6 +101,8 @@ export function showDevices() {
                 </select>
               </div>
               <div id="camposExtras"></div>
+
+              <!-- Coordenadas -->
               <div class="mb-2">
                 <label>Latitud</label><input id="latitud" type="number" step="any" class="form-control" placeholder="Latitud" readonly />
               </div>
@@ -108,8 +112,56 @@ export function showDevices() {
               <div class="mb-2">
                 <button type="button" id="btnGetLocation" class="btn btn-outline-primary w-100">📡 Obtener ubicación actual</button>
               </div>
-              <div id="mapPreview" style="height:250px; border-radius:10px;"></div>
-              <button class="btn btn-primary w-100 mt-2">💾 Guardar</button>
+
+              <hr>
+
+              <!-- BUSINESS / FAENA -->
+              <div id="businessSection">
+                <h6>Información del Negocio / Faena</h6>
+                <div class="mb-2">
+                  <label>Actividad Económica (Giro)</label>
+                  <input id="giroEmpresa" class="form-control" placeholder="Ej: Extracción de cobre, servicios mineros..." />
+                </div>
+                <div class="mb-2">
+                  <label>RUT Empresa</label>
+                  <input id="rutEmpresa" class="form-control" placeholder="AXXXXXXX-X" />
+                </div>
+                <div class="mb-2">
+                  <label>Responsable de Seguridad</label>
+                  <input id="responsableSeguridad" class="form-control" placeholder="Nombre completo" />
+                </div>
+                <div class="row mb-2">
+                  <div class="col">
+                    <label>N° Trabajadores en Faena</label>
+                    <input id="numTrabajadores" type="number" class="form-control" placeholder="Ej: 25" />
+                  </div>
+                  <div class="col">
+                    <label>Turnos</label>
+                    <input id="turnos" class="form-control" placeholder="Ej: Día / Noche" />
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label>Estado de Cumplimiento Normativo</label>
+                  <select id="cumplimiento" class="form-select">
+                    <option value="">Seleccione...</option>
+                    <option value="cumple">Cumple</option>
+                    <option value="parcial">Cumplimiento Parcial</option>
+                    <option value="no_cumple">No Cumple</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label>Riesgos Asociados</label>
+                  <textarea id="riesgos" rows="3" class="form-control" placeholder="Ej: Acumulación de CO, material particulado, derrumbes..."></textarea>
+                </div>
+                <div class="mb-2">
+                  <label>Capacidad Productiva</label>
+                  <input id="produccion" class="form-control" placeholder="Ej: 120 toneladas/mes" />
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <button type="submit" id="btnSaveGeoBusiness" class="btn btn-primary w-100 mt-2">💾 Guardar Empresa & Faena</button>
+              </div>
             </form>
           </div>
         </div>
@@ -124,8 +176,35 @@ export function showDevices() {
             <p><strong>Mina:</strong> <span id="p_mina">—</span></p>
             <p><strong>Tipo:</strong> <span id="p_tipo">—</span></p>
             <p><strong>Coordenadas:</strong> <span id="p_coord">—</span></p>
-            <div id="mapPreviewCard" style="height:250px; border-radius:10px;"></div>
+            <hr>
+            <p><strong>Giro:</strong> <span id="p_giro">—</span></p>
+            <p><strong>Responsable:</strong> <span id="p_responsable">—</span></p>
+            <p><strong>Trabajadores:</strong> <span id="p_trabajadores">—</span></p>
+            <p><strong>Cumplimiento:</strong> <span id="p_cumple">—</span></p>
+
+            <div id="mapPreviewCard" style="height:250px; border-radius:10px; margin-top:8px;"></div>
             <button id="btnMapCard" class="btn btn-outline-success w-100 mt-2">📍 Mostrar mapa</button>
+
+            <hr>
+
+            <!-- ARRIENDO RÁPIDO -->
+            <div style="margin-top:8px;">
+              <h6>Arriendo / Contrato</h6>
+              <div class="mb-2">
+                <label>Inicio arriendo</label>
+                <input id="arriendoInicio" type="date" class="form-control" />
+              </div>
+              <div class="mb-2">
+                <label>Término arriendo</label>
+                <input id="arriendoFin" type="date" class="form-control" />
+              </div>
+              <div class="d-flex gap-2">
+                <button id="btnCrearArriendo" class="btn btn-outline-primary flex-1">📝 Crear / Actualizar Arriendo</button>
+                <button id="btnCargarArriendo" class="btn btn-outline-secondary">🔁 Cargar Arriendo</button>
+              </div>
+              <div id="arriendoPreview" style="margin-top:8px;"></div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -154,6 +233,10 @@ export function showDevices() {
   const p_mina = document.getElementById("p_mina");
   const p_tipo = document.getElementById("p_tipo");
   const p_coord = document.getElementById("p_coord");
+  const p_giro = document.getElementById("p_giro");
+  const p_responsable = document.getElementById("p_responsable");
+  const p_trabajadores = document.getElementById("p_trabajadores");
+  const p_cumple = document.getElementById("p_cumple");
 
   const plantillas = {
     subterranea: `<h5>Datos subterráneos</h5><input id="nivel" class="form-control mb-2" placeholder="Nivel o piso" /><input id="galeria" class="form-control mb-2" placeholder="Galería / rampa" /><input id="frente" class="form-control mb-2" placeholder="Frente o cámara" />`,
@@ -176,20 +259,65 @@ export function showDevices() {
     const lat = document.getElementById("latitud").value;
     const lon = document.getElementById("longitud").value;
     p_coord.textContent = lat && lon ? `${lat}, ${lon}` : "—";
+
+    // Business preview
+    p_giro.textContent = document.getElementById("giroEmpresa").value || "—";
+    p_responsable.textContent = document.getElementById("responsableSeguridad").value || "—";
+    p_trabajadores.textContent = document.getElementById("numTrabajadores").value || "—";
+    p_cumple.textContent = document.getElementById("cumplimiento").selectedOptions[0]?.text || "—";
   }
 
-  geoMinaForm.onsubmit = (e) => {
+  geoMinaForm.onsubmit = async (e) => {
     e.preventDefault();
     actualizarPreview();
-    alert("✅ Formulario actualizado y datos listos para guardar.");
+    // Guardar datos de empresa/faena en RTDB en la ruta dispositvos/{deviceId}/business
+    const deviceId = DEVICE_ID_DEFAULT;
+    const businessData = {
+      empresa: document.getElementById("empresa").value || null,
+      pais: document.getElementById("pais").value || null,
+      region: document.getElementById("region").value || null,
+      comuna: document.getElementById("comuna").value || null,
+      mina: document.getElementById("mina").value || null,
+      tipoMina: document.getElementById("tipoMina").value || null,
+      // extras (si existen)
+      extras: (() => {
+        try {
+          const extrasObj = {};
+          Array.from(extras.querySelectorAll("input")).forEach(inp => { extrasObj[inp.id || Math.random()] = inp.value; });
+          return extrasObj;
+        } catch (err) { return {}; }
+      })(),
+      latitud: document.getElementById("latitud").value || null,
+      longitud: document.getElementById("longitud").value || null,
+      giro: document.getElementById("giroEmpresa").value || null,
+      rut: document.getElementById("rutEmpresa").value || null,
+      responsableSeguridad: document.getElementById("responsableSeguridad").value || null,
+      numTrabajadores: document.getElementById("numTrabajadores").value || null,
+      turnos: document.getElementById("turnos").value || null,
+      cumplimiento: document.getElementById("cumplimiento").value || null,
+      riesgos: document.getElementById("riesgos").value || null,
+      produccion: document.getElementById("produccion").value || null,
+      actualizadoEn: Date.now()
+    };
+
+    try {
+      await set(ref(db, `dispositivos/${deviceId}/business`), businessData);
+      alert("✅ Datos de empresa y faena guardados correctamente.");
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar los datos de negocio. Revisa la consola.");
+    }
   };
 
-  ["empresa","mina","tipoMina","latitud","longitud"].forEach(id =>
-    document.getElementById(id).addEventListener("input", actualizarPreview)
-  );
+  ["empresa","mina","tipoMina","latitud","longitud","giroEmpresa","responsableSeguridad","numTrabajadores","cumplimiento"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", actualizarPreview);
+    });
 
   // ================= INICIALIZAR DISPOSITIVO =================
   mostrarDatosDispositivo(DEVICE_ID_DEFAULT, document.getElementById("deviceData"));
+  cargarBusinessPreview(DEVICE_ID_DEFAULT);
 
   // ================= MAPA EN CARD =================
   let mapCard = null;
@@ -222,7 +350,7 @@ export function showDevices() {
       document.getElementById("latitud").value = lat;
       document.getElementById("longitud").value = lon;
 
-      // Reverse geocoding
+      // Reverse geocoding (Nominatim)
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`);
         const data = await res.json();
@@ -244,6 +372,41 @@ export function showDevices() {
       btnGetLocation.textContent = "📡 Obtener ubicación actual";
     }, { enableHighAccuracy: true, timeout: 10000 });
   };
+
+  // ================= ARRIENDO (create / load) =================
+  const btnCrearArriendo = document.getElementById("btnCrearArriendo");
+  const btnCargarArriendo = document.getElementById("btnCargarArriendo");
+
+  btnCrearArriendo.onclick = async () => {
+    const deviceId = DEVICE_ID_DEFAULT;
+    const inicio = document.getElementById("arriendoInicio").value;
+    const fin = document.getElementById("arriendoFin").value;
+    if (!inicio || !fin) { alert("Ingresa fecha de inicio y término."); return; }
+    // guardamos en /arriendos/{deviceId}
+    const arriendoObj = {
+      deviceId,
+      fechaInicio: new Date(inicio).toISOString(),
+      fechaTermino: new Date(fin).toISOString(),
+      creadoEn: Date.now()
+    };
+    try {
+      await set(ref(db, `arriendos/${deviceId}`), arriendoObj);
+      alert("✅ Arriendo creado/actualizado.");
+      renderArriendoPreview(deviceId);
+      renderArriendoCard(deviceId);
+    } catch (err) {
+      console.error(err);
+      alert("Error al crear arriendo.");
+    }
+  };
+
+  btnCargarArriendo.onclick = () => {
+    renderArriendoPreview(DEVICE_ID_DEFAULT);
+    renderArriendoCard(DEVICE_ID_DEFAULT);
+  };
+
+  // Si hay arriendo, cargar preview en el área de dispositivo
+  renderArriendoCard(DEVICE_ID_DEFAULT);
 }
 
 // ================================================
@@ -273,8 +436,12 @@ function mostrarDatosDispositivo(deviceId, container) {
       <p>Temperatura: ${d.temperatura ?? 0} °C</p>
     `;
   });
+
+  // También mostrar arriendo en card (si existe)
+  renderArriendoCard(deviceId);
 }
 
+// Guarda medición actual en historial_global
 function guardarMedicionActual(deviceId) {
   const container = document.getElementById("deviceData");
   if (!container) return;
@@ -292,17 +459,150 @@ function guardarMedicionActual(deviceId) {
     .catch(err => console.error(err));
 }
 
-// Aquí puedes añadir tus funciones de historial PDF/Excel como antes
+// ================================================
+// BUSINESS — cargar preview inicial si existe
+// ================================================
+function cargarBusinessPreview(deviceId) {
+  const businessRef = ref(db, `dispositivos/${deviceId}/business`);
+  onValue(businessRef, (snap) => {
+    const data = snap.val();
+    if (!data) return;
+    // rellenar form y preview
+    if (data.empresa) document.getElementById("empresa").value = data.empresa;
+    if (data.mina) document.getElementById("mina").value = data.mina;
+    if (data.tipoMina) document.getElementById("tipoMina").value = data.tipoMina;
+    if (data.latitud) document.getElementById("latitud").value = data.latitud;
+    if (data.longitud) document.getElementById("longitud").value = data.longitud;
+    if (data.giro) document.getElementById("giroEmpresa").value = data.giro;
+    if (data.rut) document.getElementById("rutEmpresa").value = data.rut;
+    if (data.responsableSeguridad) document.getElementById("responsableSeguridad").value = data.responsableSeguridad;
+    if (data.numTrabajadores) document.getElementById("numTrabajadores").value = data.numTrabajadores;
+    if (data.cumplimiento) document.getElementById("cumplimiento").value = data.cumplimiento;
+    if (data.riesgos) document.getElementById("riesgos").value = data.riesgos;
+    if (data.produccion) document.getElementById("produccion").value = data.produccion;
+
+    // actualizar preview
+    const ev = new Event('input');
+    ["empresa","mina","tipoMina","latitud","longitud","giroEmpresa","responsableSeguridad","numTrabajadores","cumplimiento"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.dispatchEvent(ev);
+    });
+  });
+}
 
 // ================================================
-// HISTORIAL, PDF, EXCEL y demás funciones existentes
+// ARRIENDOS — funciones utilitarias
 // ================================================
-// ... Aquí puedes pegar todas tus funciones de historial como en tu código anterior.
+function computeDaysLeft(isoEnd) {
+  try {
+    const end = new Date(isoEnd);
+    const now = new Date();
+    const diffMs = end - now;
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  } catch (err) { return null; }
+}
 
-// Aquí puedes añadir tus funciones de historial PDF/Excel según tu código anterior
+function computeArriendoStatus(isoStart, isoEnd) {
+  try {
+    const start = new Date(isoStart);
+    const end = new Date(isoEnd);
+    const now = new Date();
+    if (now < start) return "Pendiente";
+    if (now > end) return "Vencido";
+    const daysLeft = computeDaysLeft(isoEnd);
+    if (daysLeft <= 10) return "Por vencer";
+    return "Activo";
+  } catch (err) { return "Desconocido"; }
+}
+
+// Render pequeño resumen del arriendo en la tarjeta de vista previa
+function renderArriendoPreview(deviceId) {
+  const preview = document.getElementById("arriendoPreview");
+  if (!preview) return;
+  preview.innerHTML = "Cargando arriendo...";
+  const arriendoRef = ref(db, `arriendos/${deviceId}`);
+  onValue(arriendoRef, (snap) => {
+    const a = snap.val();
+    if (!a) { preview.innerHTML = "<small>No hay arriendo registrado.</small>"; return; }
+    const daysLeft = computeDaysLeft(a.fechaTermino);
+    const status = computeArriendoStatus(a.fechaInicio, a.fechaTermino);
+    preview.innerHTML = `
+      <div><strong>Inicio:</strong> ${new Date(a.fechaInicio).toLocaleDateString()}</div>
+      <div><strong>Termino:</strong> ${new Date(a.fechaTermino).toLocaleDateString()}</div>
+      <div><strong>Días restantes:</strong> ${daysLeft}</div>
+      <div><strong>Estado:</strong> <span class="badge badge-${status === 'Vencido' ? 'danger' : (status === 'Por vencer' ? 'warning' : 'success')}">${status}</span></div>
+    `;
+  });
+}
+
+// Render arriendo dentro del card de datos del dispositivo (alertas incluidas)
+function renderArriendoCard(deviceId) {
+  const card = document.getElementById("arriendoCard");
+  if (!card) return;
+  card.innerHTML = "Cargando arriendo...";
+  const arriendoRef = ref(db, `arriendos/${deviceId}`);
+  onValue(arriendoRef, (snap) => {
+    const a = snap.val();
+    if (!a) { card.innerHTML = ""; return; }
+    const daysLeft = computeDaysLeft(a.fechaTermino);
+    const status = computeArriendoStatus(a.fechaInicio, a.fechaTermino);
+
+    // Barra de progreso simple
+    let pct = 0;
+    try {
+      const s = new Date(a.fechaInicio).getTime();
+      const e = new Date(a.fechaTermino).getTime();
+      const now = Date.now();
+      if (now <= s) pct = 0;
+      else if (now >= e) pct = 100;
+      else pct = Math.round(((now - s) / (e - s)) * 100);
+    } catch (err) { pct = 0; }
+
+    card.innerHTML = `
+      <div style="padding:8px;">
+        <h6>Arriendo</h6>
+        <div><small>Inicio: ${new Date(a.fechaInicio).toLocaleString()}</small></div>
+        <div><small>Fin: ${new Date(a.fechaTermino).toLocaleString()}</small></div>
+        <div style="margin-top:6px;">
+          <div style="height:10px;background:#eee;border-radius:6px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${status === 'Vencido' ? '#e74c3c' : (status === 'Por vencer' ? '#f39c12' : '#2ecc71')};"></div>
+          </div>
+          <small>${pct}% transcurrido — ${daysLeft} días restantes</small>
+        </div>
+        <div style="margin-top:6px;">
+          <strong>Estado:</strong> <span style="font-weight:bold;color:${status === 'Vencido' ? '#e74c3c' : (status === 'Por vencer' ? '#f39c12' : '#2ecc71')}">${status}</span>
+        </div>
+      </div>
+    `;
+
+    // Alertas visuales (puedes mejorar con sonido o notificaciones)
+    if (status === "Por vencer") {
+      // simple DOM alert
+      const existing = document.getElementById("arriendoAlert");
+      if (!existing) {
+        const aEl = document.createElement("div");
+        aEl.id = "arriendoAlert";
+        aEl.className = "alert alert-warning";
+        aEl.innerHTML = `⚠️ Arriendo por vencer en ${daysLeft} días. <button id="btnRenovar" class="btn btn-sm btn-outline-primary">Renovar</button>`;
+        card.appendChild(aEl);
+        document.getElementById("btnRenovar").onclick = () => {
+          // abrir modal o prellenar fecha para renovar (simplificado: abre la caja de fecha)
+          const finInput = document.getElementById("arriendoFin");
+          if (finInput) finInput.focus();
+          alert("Ingresa nueva fecha de término y presiona 'Crear / Actualizar Arriendo' para renovar.");
+        };
+      } else {
+        existing.innerHTML = `⚠️ Arriendo por vencer en ${daysLeft} días. <button id="btnRenovar" class="btn btn-sm btn-outline-primary">Renovar</button>`;
+      }
+    } else {
+      const existing = document.getElementById("arriendoAlert");
+      if (existing) existing.remove();
+    }
+  });
+}
 
 // ================================================
-// HISTORIAL COMPLETO
+// HISTORIAL COMPLETO (mantengo tu estructura)
 // ================================================
 function showHistoricalPage(deviceId) {
   const root = document.getElementById("root");
@@ -462,3 +762,8 @@ function guardarHistorialComoExcel(deviceId, registros) {
   link.download = `historial-global-${deviceId}.csv`;
   link.click();
 }
+
+// ================================================
+// FIN
+// ================================================
+
