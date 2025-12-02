@@ -1,4 +1,4 @@
-// ================================================ 
+// ================================================
 // app.js — Navegación principal con navbar global estilizada
 // ================================================
 import { showLogin } from "./components/Login.js";
@@ -20,7 +20,12 @@ import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
 import { auth } from "./firebaseConfig.js";
 
-// 🔹 Nueva importación
+// 🔹 Importación de vistas nuevas (contractos / arriendos)
+import { showContractManager } from "./views/ContractManager.js";
+import { showUserContracts } from "./views/UserContracts.js";
+import { showContractPayments } from "./views/ContractPayments.js";
+import { showDeviceRentStatus } from "./views/DeviceRentStatus.js";
+
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
@@ -63,18 +68,19 @@ export function navigate(view) {
     case "tipomina": showTipoMinaForm(); break;
     case "geoempresa": showGeoEmpresaForm(); break;
 
-    // 🔹 Nueva vista: Empresa & Mina
+    // Nuevas vistas de arriendos/contratos
+    case "contractsAdmin": showContractManager(); break;       // Admin
+    case "myContracts": showUserContracts(); break;            // Usuario
+    case "contractPayments": showContractPayments(); break;    // Pagos
+    case "deviceRentStatus": showDeviceRentStatus(); break;    // Estado dispositivos
+
+    // 🔹 Otras vistas existentes
     case "geominaempresa":
       import("./components/GeoMinaEmpresaDashboard.js")
         .then(module => module.showGeoMinaEmpresaDashboard())
         .catch(err => console.error("Error cargando GeoMinaEmpresaDashboard:", err));
       break;
-
-    // 🔹 Nueva vista: Datos del Usuario
-    case "datosdelusuario":
-      showDatoDelUsuario();
-      break;
-
+    case "datosdelusuario": showDatoDelUsuario(); break;
     case "usuarios": showUsuarios(); break;
     case "graficos": showGraficos(); break;
     case "geolocalizacion": showGeolocalizacion(); break;
