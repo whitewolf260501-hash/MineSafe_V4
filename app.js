@@ -18,7 +18,7 @@ import { showGeolocalizacion } from "./components/Geolocalizacion.js";
 import { showHistoryManagerPage } from "./components/historyManager.js";
 import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
-import { auth } from "./firebaseConfig.js";
+import { auth, onAuthStateChanged } from "./firebaseConfig.js";
 
 // Nuevas vistas (contratos / arriendos)
 import { showContractManager } from "./views/ContractManager.js";
@@ -36,12 +36,13 @@ try {
 }
 
 const root = document.getElementById("root");
+const header = document.querySelector("header");
 
+// ==================== FUNCIÓN DE NAVEGACIÓN ====================
 export function navigate(view) {
   root.innerHTML = "";
 
   // Login, Registro y Recuperar → sin navbar
-  const header = document.querySelector("header");
   if (["login", "register", "recoverPassword"].includes(view)) {
     if (header) header.style.display = "flex";
     if (view === "login") showLogin();
@@ -50,6 +51,7 @@ export function navigate(view) {
     return;
   }
 
+  // Dashboard y demás vistas → ocultar header y renderizar navbar
   if (header) header.style.display = "none";
   const navbar = renderNavbar();
   root.appendChild(navbar);
@@ -95,5 +97,15 @@ export function navigate(view) {
   }
 }
 
-// Arranque inicial
-navigate("login");
+// ==================== AUTENTICACIÓN ====================
+onAuthStateChanged(auth, (user) => {
+  const status = document.getElementById("userStatus");
+
+  if (user) {
+    if (status) status.textContent = `Bienvenido, ${user.email}`;
+    navigate("user"); // Muestra dashboard si está autenticado
+  } else {
+    if (status) status.textContent = "Usuario no autenticado";
+    navigate("login"); // Muestra login si no hay usuario
+  }
+});
