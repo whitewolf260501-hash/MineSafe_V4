@@ -20,12 +20,11 @@ import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
 import { auth } from "./firebaseConfig.js";
 
-// 🔹 Importación de vistas nuevas (contractos / arriendos)
+// Nuevas vistas (contratos / arriendos)
 import { showContractManager } from "./views/ContractManager.js";
 import { showUserContracts } from "./views/UserContracts.js";
 import { showContractPayments } from "./views/ContractPayments.js";
 import { showDeviceRentStatus } from "./views/DeviceRentStatus.js";
-
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
@@ -42,16 +41,16 @@ export function navigate(view) {
   root.innerHTML = "";
 
   // Login, Registro y Recuperar → sin navbar
+  const header = document.querySelector("header");
   if (["login", "register", "recoverPassword"].includes(view)) {
-    document.querySelector("header").style.display = "flex";
+    if (header) header.style.display = "flex";
     if (view === "login") showLogin();
     if (view === "register") showRegister();
     if (view === "recoverPassword") showRecoverPassword();
     return;
   }
 
-  // Oculta header y muestra navbar
-  document.querySelector("header").style.display = "none";
+  if (header) header.style.display = "none";
   const navbar = renderNavbar();
   root.appendChild(navbar);
 
@@ -69,12 +68,12 @@ export function navigate(view) {
     case "geoempresa": showGeoEmpresaForm(); break;
 
     // Nuevas vistas de arriendos/contratos
-    case "contractsAdmin": showContractManager(); break;       // Admin
-    case "myContracts": showUserContracts(); break;            // Usuario
-    case "contractPayments": showContractPayments(); break;    // Pagos
-    case "deviceRentStatus": showDeviceRentStatus(); break;    // Estado dispositivos
+    case "contractManager": showContractManager(); break;
+    case "userContracts": showUserContracts(); break;
+    case "contractPayments": showContractPayments(); break;
+    case "deviceRentStatus": showDeviceRentStatus(); break;
 
-    // 🔹 Otras vistas existentes
+    // Otras vistas existentes
     case "geominaempresa":
       import("./components/GeoMinaEmpresaDashboard.js")
         .then(module => module.showGeoMinaEmpresaDashboard())

@@ -5,15 +5,11 @@ import { auth, firestore, onAuthStateChanged } from "../firebaseConfig.js";
 import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { navigate } from "../app.js";
 
-// Asegúrate de tener Chart.js en tu proyecto:
-// <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 export function showUserDashboard() {
   const root = document.getElementById("root");
 
   root.innerHTML = `
   <div class="ms-dashboard">
-    <!-- ================== SIDEBAR ================== -->
     <aside class="ms-sidebar">
       <div class="ms-brand">
         <img src="assets/images/Logo2.png" alt="Minesafe" class="ms-logo"/>
@@ -38,15 +34,14 @@ export function showUserDashboard() {
         <button data-view="manager">🗂️ Manage</button>
         <button data-view="usuarios">👥 Usuarios</button>
         <button data-view="devicelive">📡 Datos del Dispositivo</button>
-
         <button data-view="graficos">📊 Gráficos</button>
         <button data-view="geolocalizacion">📍 Mapa</button>
-        <!-- ==== NUEVAS SECCIONES ==== -->
+
+        <!-- Nuevas secciones -->
         <button data-view="contractManager">📁 Contratos</button>
         <button data-view="userContracts">📝 Mis Contratos</button>
         <button data-view="contractPayments">💳 Pagos de Contrato</button>
         <button data-view="deviceRentStatus">🔌 Estado de Alquiler</button>
-
       </nav>
 
       <div class="ms-footer">
@@ -55,7 +50,6 @@ export function showUserDashboard() {
       </div>
     </aside>
 
-    <!-- ================== MAIN CONTENT ================== -->
     <main class="ms-main">
       <header class="ms-header">
         <div class="ms-header-left">
@@ -67,41 +61,21 @@ export function showUserDashboard() {
         </div>
       </header>
 
-      <!-- ==== TARJETAS RESUMEN ==== -->
       <section class="ms-summary">
-        <div class="summary-card blue">
-          <h4>Ingresos</h4>
-          <p class="value">$20,000</p>
-        </div>
-        <div class="summary-card purple">
-          <h4>Uso de Nube</h4>
-          <p class="value">50/50 GB</p>
-        </div>
-        <div class="summary-card teal">
-          <h4>Dispositivos Activos</h4>
-          <p class="value">8</p>
-        </div>
-        <div class="summary-card yellow">
-          <h4>Alertas Recientes</h4>
-          <p class="value">3</p>
-        </div>
+        <div class="summary-card blue"><h4>Ingresos</h4><p class="value">$20,000</p></div>
+        <div class="summary-card purple"><h4>Uso de Nube</h4><p class="value">50/50 GB</p></div>
+        <div class="summary-card teal"><h4>Dispositivos Activos</h4><p class="value">8</p></div>
+        <div class="summary-card yellow"><h4>Alertas Recientes</h4><p class="value">3</p></div>
       </section>
 
-      <!-- ==== BLOQUE DE GRÁFICOS ==== -->
       <section class="ms-grid">
         <div class="panel-card">
           <div class="panel-top"><h3>Actividad de Sensores</h3></div>
           <div class="panel-body"><canvas id="sensorChart"></canvas></div>
         </div>
-
         <div class="panel-card">
-          <div class="panel-top">
-            <h3>Nivel de Sensores</h3>
-            <p class="subtitulo">Estado</p>
-          </div>
-          <div class="panel-body">
-            <canvas id="sensorGauge" style="width:100%; height:auto;"></canvas>
-          </div>
+          <div class="panel-top"><h3>Nivel de Sensores</h3><p class="subtitulo">Estado</p></div>
+          <div class="panel-body"><canvas id="sensorGauge" style="width:100%; height:auto;"></canvas></div>
         </div>
       </section>
     </main>
@@ -110,20 +84,10 @@ export function showUserDashboard() {
 
   // ==================== NAVBAR FUNCIONAL ====================
   document.querySelectorAll("button[data-view]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const view = btn.dataset.view;
-
+    btn.addEventListener("click", () => {
       document.querySelectorAll(".ms-nav button").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-
-      if (view === "geominaempresa") {
-        const module = await import("./GeoMinaEmpresaDashboard.js");
-        module.showGeoMinaEmpresaDashboard();
-      } else if (view === "datosdelusuario") {
-        navigate("datosdelusuario");
-      } else {
-        navigate(view);
-      }
+      navigate(btn.dataset.view);
     });
   });
 
@@ -132,38 +96,6 @@ export function showUserDashboard() {
     await auth.signOut();
     navigate("login");
   };
-  document.querySelectorAll("button[data-view]").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const view = btn.dataset.view;
-
-    document.querySelectorAll(".ms-nav button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    // Nuevos módulos
-    if (view === "contractManager") {
-      const module = await import("./ContractManager.js");
-      module.showContractManager(); // función que exporte ContractManager.js
-    } else if (view === "userContracts") {
-      const module = await import("./UserContracts.js");
-      module.showUserContracts();
-    } else if (view === "contractPayments") {
-      const module = await import("./ContractPayments.js");
-      module.showContractPayments();
-    } else if (view === "deviceRentStatus") {
-      const module = await import("./DeviceRentStatus.js");
-      module.showDeviceRentStatus();
-    }
-    // Módulos existentes
-    else if (view === "geominaempresa") {
-      const module = await import("./GeoMinaEmpresaDashboard.js");
-      module.showGeoMinaEmpresaDashboard();
-    } else if (view === "datosdelusuario") {
-      navigate("datosdelusuario");
-    } else {
-      navigate(view);
-    }
-  });
-});
 
   // ==================== TEMA OSCURO / CLARO ====================
   const themeBtn = document.getElementById("themeToggle");
@@ -190,13 +122,12 @@ export function showUserDashboard() {
 
   // ==================== INICIAR GRÁFICOS ====================
   initCharts();
-}
+};
 
 // ============================================================
-// FUNCIÓN: INICIALIZAR GRÁFICOS
+// INICIALIZAR GRÁFICOS
 // ============================================================
 function initCharts() {
-  // === Línea: Actividad de sensores ===
   const ctx1 = document.getElementById("sensorChart");
   new Chart(ctx1, {
     type: "line",
@@ -220,13 +151,11 @@ function initCharts() {
       }
     }
   });
-
-  // === Gauge (estado general) ===
   drawGauge("sensorGauge", 65);
 }
 
 // ============================================================
-// FUNCIÓN: DIBUJAR GAUGE RESPONSIVE
+// DIBUJAR GAUGE RESPONSIVE
 // ============================================================
 function drawGauge(canvasId, value) {
   const canvas = document.getElementById(canvasId);
@@ -237,14 +166,11 @@ function drawGauge(canvasId, value) {
     const height = width * 0.6;
     canvas.width = width;
     canvas.height = height;
-
     const centerX = width / 2;
     const centerY = height * 0.9;
     const radius = Math.min(width, height) / 3;
-
     ctx.clearRect(0, 0, width, height);
 
-    // === Zonas de color (verde / amarillo / rojo) ===
     const zones = [
       { color: "#00b894", start: -Math.PI, end: -Math.PI / 3 },
       { color: "#fdcb6e", start: -Math.PI / 3, end: Math.PI / 3 },
@@ -259,7 +185,6 @@ function drawGauge(canvasId, value) {
       ctx.stroke();
     });
 
-    // === Aguja ===
     const angle = -Math.PI + (value / 100) * Math.PI;
     const needleLength = radius * 0.85;
     ctx.beginPath();
@@ -269,13 +194,11 @@ function drawGauge(canvasId, value) {
     ctx.strokeStyle = "#2d3436";
     ctx.stroke();
 
-    // === Centro ===
     ctx.beginPath();
     ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
     ctx.fillStyle = "#2d3436";
     ctx.fill();
 
-    // === Valor ===
     ctx.font = `${Math.max(14, radius * 0.25)}px Poppins`;
     ctx.fillStyle = "#2d3436";
     ctx.textAlign = "center";
