@@ -18,32 +18,38 @@ import { showGeolocalizacion } from "./components/Geolocalizacion.js";
 import { showHistoryManagerPage } from "./components/historyManager.js";
 import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
-import { auth } from "./firebaseConfig.js";
+import { auth, onAuthStateChanged } from "./firebaseConfig.js";
 
-// 🔹 Importación de vistas nuevas (contractos / arriendos)
+// Nuevas vistas
 import { showContractManager } from "./views/ContractManager.js";
 import { showUserContracts } from "./views/UserContracts.js";
 import { showContractPayments } from "./views/ContractPayments.js";
 import { showDeviceRentStatus } from "./views/DeviceRentStatus.js";
-
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
-try {
-  const module = await import("./components/deviceHistory.js");
-  showAllDevicesFunc = module.showAllDevices;
-} catch (error) {
-  console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
+
+async function loadDeviceHistory() {
+  if (!showAllDevicesFunc) {
+    try {
+      const module = await import("./components/deviceHistory.js");
+      showAllDevicesFunc = module.showAllDevices;
+    } catch (err) {
+      console.warn("⚠️ No se pudo cargar deviceHistory.js:", err);
+    }
+  }
 }
 
 const root = document.getElementById("root");
 
-export function navigate(view) {
+export async function navigate(view) {
   root.innerHTML = "";
+
+  const header = document.querySelector("header");
 
   // Login, Registro y Recuperar → sin navbar
   if (["login", "register", "recoverPassword"].includes(view)) {
-    document.querySelector("header").style.display = "flex";
+    if (header) header.style.display = "flex";
     if (view === "login") showLogin();
     if (view === "register") showRegister();
     if (view === "recoverPassword") showRecoverPassword();
@@ -51,7 +57,7 @@ export function navigate(view) {
   }
 
   // Oculta header y muestra navbar
-  document.querySelector("header").style.display = "none";
+  if (header) header.style.display = "none";
   const navbar = renderNavbar();
   root.appendChild(navbar);
 
@@ -68,13 +74,11 @@ export function navigate(view) {
     case "tipomina": showTipoMinaForm(); break;
     case "geoempresa": showGeoEmpresaForm(); break;
 
-    // Nuevas vistas de arriendos/contratos
-    case "contractsAdmin": showContractManager(); break;       // Admin
-    case "myContracts": showUserContracts(); break;            // Usuario
-    case "contractPayments": showContractPayments(); break;    // Pagos
-    case "deviceRentStatus": showDeviceRentStatus(); break;    // Estado dispositivos
+    case "contractsAdmin": showContractManager(); break;
+    case "myContracts": showUserContracts(); break;
+    case "contractPayments": showContractPayments(); break;
+    case "deviceRentStatus": showDeviceRentStatus(); break;
 
-    // 🔹 Otras vistas existentes
     case "geominaempresa":
       import("./components/GeoMinaEmpresaDashboard.js")
         .then(module => module.showGeoMinaEmpresaDashboard())
@@ -87,6 +91,7 @@ export function navigate(view) {
     case "pagina1": showPagina1(); break;
     case "pagina2": showPagina2(); break;
     case "history":
+      await loadDeviceHistory();
       showAllDevicesFunc
         ? showAllDevicesFunc()
         : (content.innerHTML = "<p>⚠️ Historial no disponible.</p>");
@@ -96,5 +101,15 @@ export function navigate(view) {
   }
 }
 
-// Arranque inicial
-navigate("login");
+// ===================
+// Inicializar app según auth
+// ===================
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Usuario logueado → mostrar dashboard
+    navigate("user");
+  } else {
+    // No logueado → mostrar login
+    navigate("login");
+  }
+});
