@@ -41,6 +41,12 @@ export function showUserDashboard() {
 
         <button data-view="graficos">📊 Gráficos</button>
         <button data-view="geolocalizacion">📍 Mapa</button>
+        <!-- ==== NUEVAS SECCIONES ==== -->
+        <button data-view="contractManager">📁 Contratos</button>
+        <button data-view="userContracts">📝 Mis Contratos</button>
+        <button data-view="contractPayments">💳 Pagos de Contrato</button>
+        <button data-view="deviceRentStatus">🔌 Estado de Alquiler</button>
+
       </nav>
 
       <div class="ms-footer">
@@ -126,6 +132,38 @@ export function showUserDashboard() {
     await auth.signOut();
     navigate("login");
   };
+  document.querySelectorAll("button[data-view]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const view = btn.dataset.view;
+
+    document.querySelectorAll(".ms-nav button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Nuevos módulos
+    if (view === "contractManager") {
+      const module = await import("./ContractManager.js");
+      module.showContractManager(); // función que exporte ContractManager.js
+    } else if (view === "userContracts") {
+      const module = await import("./UserContracts.js");
+      module.showUserContracts();
+    } else if (view === "contractPayments") {
+      const module = await import("./ContractPayments.js");
+      module.showContractPayments();
+    } else if (view === "deviceRentStatus") {
+      const module = await import("./DeviceRentStatus.js");
+      module.showDeviceRentStatus();
+    }
+    // Módulos existentes
+    else if (view === "geominaempresa") {
+      const module = await import("./GeoMinaEmpresaDashboard.js");
+      module.showGeoMinaEmpresaDashboard();
+    } else if (view === "datosdelusuario") {
+      navigate("datosdelusuario");
+    } else {
+      navigate(view);
+    }
+  });
+});
 
   // ==================== TEMA OSCURO / CLARO ====================
   const themeBtn = document.getElementById("themeToggle");
