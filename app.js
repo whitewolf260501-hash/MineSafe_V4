@@ -18,9 +18,9 @@ import { showGeolocalizacion } from "./components/Geolocalizacion.js";
 import { showHistoryManagerPage } from "./components/historyManager.js";
 import { showRecoverPassword } from "./components/RecoverPassword.js";
 import { renderNavbar } from "./components/navbar.js";
-import { auth, onAuthStateChanged } from "./firebaseConfig.js";
+import { auth } from "./firebaseConfig.js";
 
-// Nuevas vistas (contratos / arriendos)
+// 🔹 Importación de vistas nuevas (contractos / arriendos)
 import { showContractManager } from "./views/ContractManager.js";
 import { showUserContracts } from "./views/UserContracts.js";
 import { showContractPayments } from "./views/ContractPayments.js";
@@ -29,39 +29,21 @@ import { showDeviceRentStatus } from "./views/DeviceRentStatus.js";
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
-const root = document.getElementById("root");
-
-async function initApp() {
-  // Importación dinámica de historial de dispositivos
-  try {
-    const module = await import("./components/deviceHistory.js");
-    showAllDevicesFunc = module.showAllDevices;
-  } catch (error) {
-    console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
-  }
-
-  // Manejo de autenticación
-  onAuthStateChanged(auth, (user) => {
-    const status = document.getElementById("userStatus");
-    if (user) {
-      if (status) status.textContent = `Bienvenido, ${user.email}`;
-      navigate("user", { nombre: user.displayName, email: user.email });
-    } else {
-      if (status) status.textContent = "";
-      navigate("login");
-    }
-  });
+try {
+  const module = await import("./components/deviceHistory.js");
+  showAllDevicesFunc = module.showAllDevices;
+} catch (error) {
+  console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
 }
 
-// ==================== FUNCIÓN DE NAVEGACIÓN ====================
-export function navigate(view, userData = null) {
+const root = document.getElementById("root");
+
+export function navigate(view) {
   root.innerHTML = "";
 
-  const header = document.querySelector("header");
-
-  // Login, Registro y Recuperar → mostrar header
+  // Login, Registro y Recuperar → sin navbar
   if (["login", "register", "recoverPassword"].includes(view)) {
-    if (header) header.style.display = "flex";
+    document.querySelector("header").style.display = "flex";
     if (view === "login") showLogin();
     if (view === "register") showRegister();
     if (view === "recoverPassword") showRecoverPassword();
@@ -69,7 +51,7 @@ export function navigate(view, userData = null) {
   }
 
   // Oculta header y muestra navbar
-  if (header) header.style.display = "none";
+  document.querySelector("header").style.display = "none";
   const navbar = renderNavbar();
   root.appendChild(navbar);
 
@@ -77,11 +59,8 @@ export function navigate(view, userData = null) {
   content.className = "page-content";
   root.appendChild(content);
 
-  // ============================================
-  // Selección de vistas
-  // ============================================
   switch (view) {
-    case "user": showUserDashboard(userData); break;
+    case "user": showUserDashboard(); break;
     case "admin": showAdminDashboard(); break;
     case "alerts": showAlerts(); break;
     case "devices": showDevices(); break;
@@ -90,12 +69,12 @@ export function navigate(view, userData = null) {
     case "geoempresa": showGeoEmpresaForm(); break;
 
     // Nuevas vistas de arriendos/contratos
-    case "contractsAdmin": showContractManager(); break;
-    case "myContracts": showUserContracts(); break;
-    case "contractPayments": showContractPayments(); break;
-    case "deviceRentStatus": showDeviceRentStatus(); break;
+    case "contractsAdmin": showContractManager(); break;       // Admin
+    case "myContracts": showUserContracts(); break;            // Usuario
+    case "contractPayments": showContractPayments(); break;    // Pagos
+    case "deviceRentStatus": showDeviceRentStatus(); break;    // Estado dispositivos
 
-    // Otras vistas existentes
+    // 🔹 Otras vistas existentes
     case "geominaempresa":
       import("./components/GeoMinaEmpresaDashboard.js")
         .then(module => module.showGeoMinaEmpresaDashboard())
@@ -117,5 +96,5 @@ export function navigate(view, userData = null) {
   }
 }
 
-// ==================== INICIALIZAR APLICACIÓN ====================
-initApp();
+// Arranque inicial
+navigate("login");
