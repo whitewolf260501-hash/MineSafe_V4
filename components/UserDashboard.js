@@ -1,5 +1,5 @@
 // ============================================================
-// userDashboard.js — Panel moderno con navegación + gráficos + ARRIENDO / CONTRACT STATUS
+// userDashboard.js — Panel moderno con navegación + gráficos + velocímetro responsive
 // ============================================================
 import { auth, firestore, onAuthStateChanged } from "../firebaseConfig.js";
 import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -16,7 +16,7 @@ export function showUserDashboard() {
     <!-- ================== SIDEBAR ================== -->
     <aside class="ms-sidebar">
       <div class="ms-brand">
-        <img src="assets/images/WhatsApp Image 2025-11-27 at 1.01.45 PM.jpeg" alt="Minesafe" class="ms-logo"/>
+        <img src="assets/images/Logo2.png" alt="Minesafe" class="ms-logo"/>
         <h1>Minesafe 2</h1>
       </div>
 
@@ -63,14 +63,10 @@ export function showUserDashboard() {
 
       <!-- ==== TARJETAS RESUMEN ==== -->
       <section class="ms-summary">
-
-        <!-- =================== TARJETA DE ARRIENDO =================== -->
-        <div class="summary-card green" id="arriendoCard">
-          <h4>Estado del Arriendo</h4>
-          <p class="value" id="estadoArriendo">Cargando...</p>
-          <p class="sub" id="arriendoFechas"></p>
+        <div class="summary-card blue">
+          <h4>Ingresos</h4>
+          <p class="value">$20,000</p>
         </div>
-
         <div class="summary-card purple">
           <h4>Uso de Nube</h4>
           <p class="value">50/50 GB</p>
@@ -147,51 +143,11 @@ export function showUserDashboard() {
   onAuthStateChanged(auth, async (user) => {
     if (!user) return (root.innerHTML = "<p>No hay usuario autenticado.</p>");
     const userDoc = doc(firestore, "users", user.uid);
-
     onSnapshot(userDoc, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       document.getElementById("username").textContent = data.nombre || "Usuario";
       document.getElementById("useremail").textContent = user.email;
     });
-
-    // ==================== ESTADO DEL ARRIENDO ====================
-    const arriendoRef = doc(firestore, "arriendos", user.uid);
-    onSnapshot(arriendoRef, (snap) => {
-      const card = document.getElementById("arriendoCard");
-      const label = document.getElementById("estadoArriendo");
-      const fechas = document.getElementById("arriendoFechas");
-
-      if (!snap.exists()) {
-        label.textContent = "Sin contrato";
-        fechas.textContent = "—";
-        card.className = "summary-card gray";
-        return;
-      }
-
-      const datos = snap.data();
-      const inicio = new Date(datos.inicio);
-      const fin = new Date(datos.fin);
-      const hoy = new Date();
-
-      const diff = Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24));
-
-      fechas.textContent = `Inicio: ${datos.inicio} — Fin: ${datos.fin}`;
-
-      if (diff <= 0) {
-        label.textContent = "❌ Vencido";
-        card.className = "summary-card red";
-      } else if (diff <= 7) {
-        label.textContent = `⚠️ ${diff} días — Crítico`;
-        card.className = "summary-card red";
-      } else if (diff <= 30) {
-        label.textContent = `🟡 ${diff} días — Por vencer`;
-        card.className = "summary-card yellow";
-      } else {
-        label.textContent = `🟢 Activo (${diff} días restantes)`;
-        card.className = "summary-card green";
-      }
-    });
-
   });
 
   // ==================== INICIAR GRÁFICOS ====================
@@ -202,6 +158,7 @@ export function showUserDashboard() {
 // FUNCIÓN: INICIALIZAR GRÁFICOS
 // ============================================================
 function initCharts() {
+  // === Línea: Actividad de sensores ===
   const ctx1 = document.getElementById("sensorChart");
   new Chart(ctx1, {
     type: "line",
@@ -226,6 +183,7 @@ function initCharts() {
     }
   });
 
+  // === Gauge (estado general) ===
   drawGauge("sensorGauge", 65);
 }
 
@@ -248,6 +206,7 @@ function drawGauge(canvasId, value) {
 
     ctx.clearRect(0, 0, width, height);
 
+    // === Zonas de color (verde / amarillo / rojo) ===
     const zones = [
       { color: "#00b894", start: -Math.PI, end: -Math.PI / 3 },
       { color: "#fdcb6e", start: -Math.PI / 3, end: Math.PI / 3 },
@@ -262,6 +221,7 @@ function drawGauge(canvasId, value) {
       ctx.stroke();
     });
 
+    // === Aguja ===
     const angle = -Math.PI + (value / 100) * Math.PI;
     const needleLength = radius * 0.85;
     ctx.beginPath();
@@ -271,11 +231,13 @@ function drawGauge(canvasId, value) {
     ctx.strokeStyle = "#2d3436";
     ctx.stroke();
 
+    // === Centro ===
     ctx.beginPath();
     ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
     ctx.fillStyle = "#2d3436";
     ctx.fill();
 
+    // === Valor ===
     ctx.font = `${Math.max(14, radius * 0.25)}px Poppins`;
     ctx.fillStyle = "#2d3436";
     ctx.textAlign = "center";

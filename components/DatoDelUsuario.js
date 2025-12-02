@@ -37,7 +37,10 @@ import { navigate } from "../app.js";
 // 🔥 UTIL: normalizar email -> id seguro para doc keys
 // =====================================================
 function sanitizeId(email) {
-  return String(email || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
+  return String(email || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "_");
 }
 
 // =====================================================
@@ -124,7 +127,7 @@ export function showDatoDelUsuario() {
 
       <section class="ms-grid py-4">
         <article class="ms-card form-card glass animate-fade" id="userFormContainer" style="display:none;">
-          <form id="userForm" class="form-inner" autocomplete="off">
+          <form id="userForm" class="form-inner">
             <h3 class="text-primary">Formulario de Usuario</h3>
 
             <div class="row">
@@ -157,29 +160,6 @@ export function showDatoDelUsuario() {
               <label>Empresa</label>
               <input id="empresa" class="form-control" />
             </div>
-
-            <!-- NUEVOS CAMPOS: dispositivo, cantidad, fechas -->
-            <div class="row">
-              <label>Dispositivo actual conectado</label>
-              <input id="dispositivoActual" class="form-control" placeholder="Ej: ESP32_01" />
-            </div>
-
-            <div class="row">
-              <label>Cantidad de dispositivos del usuario</label>
-              <input id="cantidadDispositivos" type="number" class="form-control" min="0" />
-            </div>
-
-            <div class="row split">
-              <div>
-                <label>Fecha inicio contrato/servicio</label>
-                <input id="fechaInicio" type="date" class="form-control" />
-              </div>
-              <div>
-                <label>Fecha término contrato/servicio</label>
-                <input id="fechaTermino" type="date" class="form-control" />
-              </div>
-            </div>
-            <!-- FIN nuevos campos -->
 
             <div class="row split">
               <div>
@@ -234,17 +214,11 @@ export function showDatoDelUsuario() {
   const currentPassword = document.getElementById("currentPassword");
   const newPassword = document.getElementById("newPassword");
 
-  // NUEVAS VARIABLES
-  const dispositivoActual = document.getElementById("dispositivoActual");
-  const cantidadDispositivos = document.getElementById("cantidadDispositivos");
-  const fechaInicio = document.getElementById("fechaInicio");
-  const fechaTermino = document.getElementById("fechaTermino");
-
   const form = document.getElementById("userForm");
   const usersList = document.getElementById("usersList");
   const userFormContainer = document.getElementById("userFormContainer");
 
-  let userActual = null; // id del doc que se edita (uid real o sanitizeId(email))
+  let userActual = null;
   let currentUserRole = null;
   let currentUid = null;
 
@@ -257,7 +231,7 @@ export function showDatoDelUsuario() {
     currentUid = user.uid;
     currentUserRole = await getUserRoleReal(user.uid);
 
-    // Obtener info del usuario desde Firestore (intentar con UID real)
+    // Obtener info del usuario desde Firestore
     const userRef = doc(firestore, "users", user.uid);
     const snap = await getDoc(userRef);
     const data = snap.exists() ? snap.data() : {};
@@ -271,17 +245,9 @@ export function showDatoDelUsuario() {
 
     userFormContainer.style.display = "block";
 
-    // Seguridad UI según rol: usuario normal no puede cambiar email ni rol
     if (currentUserRole === "usuario") {
       roleRow.style.display = "none";
-      email.disabled = true; // impedir cambio de email desde UI
-    } else {
-      roleRow.style.display = "block";
-      email.disabled = false;
-    }
 
-    // Si es usuario normal, autocompletamos su info (si existe documento con uid)
-    if (currentUserRole === "usuario") {
       uid.value = user.uid;
       nombre.value = data.nombre || "";
       email.value = data.email || "";
@@ -289,29 +255,9 @@ export function showDatoDelUsuario() {
       cargo.value = data.cargo || "";
       empresa.value = data.empresa || "";
 
-      dispositivoActual.value = data.dispositivoActual || "";
-
-      // 🔥 CORRECCIÓN: normalizar campo 'cantidadDispositivos' y tolerar campo antiguo si existe
-      const cantidadFromDoc = data.cantidadDispositivos ?? data.cantidadDispositos ?? 0;
-      cantidadDispositivos.value = Number(cantidadFromDoc) || 0;
-
-      fechaInicio.value = data.fechaInicio || "";
-      fechaTermino.value = data.fechaTermino || "";
-
       userActual = user.uid;
     } else {
-      // admin/superAdmin: mostrar formulario en blanco (hasta editar)
-      uid.value = "";
-      nombre.value = "";
-      email.value = "";
-      telefono.value = "";
-      cargo.value = "";
-      empresa.value = "";
-      dispositivoActual.value = "";
-      cantidadDispositivos.value = 0;
-      fechaInicio.value = "";
-      fechaTermino.value = "";
-      userActual = null;
+      roleRow.style.display = "block";
     }
   });
 
@@ -326,14 +272,10 @@ export function showDatoDelUsuario() {
       const data = docu.data();
       const id = docu.id;
 
-      // Si soy usuario normal solo muestro mi tarjeta
       if (currentUserRole === "usuario" && id !== currentUid) return;
 
       const rol = data.isSuperUser ? "superAdmin" : data.isAdmin ? "admin" : "usuario";
-      const canEdit =
-        currentUserRole === "superAdmin" ||
-        currentUserRole === "admin" ||
-        (currentUserRole === "usuario" && id === currentUid);
+      const canEdit = currentUserRole === "superAdmin" || currentUserRole === "admin" || (currentUserRole === "usuario" && id === currentUid);
       const canDelete = currentUserRole === "superAdmin";
       const canToggle = currentUserRole === "superAdmin" || currentUserRole === "admin";
 
@@ -343,9 +285,6 @@ export function showDatoDelUsuario() {
       const botonColorStyle = isActive ? "background:#ff8800;" : "background:#22bb33;";
       const botonTexto = isActive ? "⛔ Desactivar" : "✔ Activar";
 
-      // mostrar cantidad tolerando nombre antiguo
-      const cantidadMostrar = data.cantidadDispositivos ?? data.cantidadDispositos ?? 0;
-
       const div = document.createElement("div");
       div.className = "user-card glass animate-fade";
 
@@ -354,14 +293,6 @@ export function showDatoDelUsuario() {
         <div><strong>Email:</strong> ${data.email || "—"}</div>
         <div><strong>Teléfono:</strong> ${data.telefono || "—"}</div>
         <div><strong>Empresa:</strong> ${data.empresa || "—"}</div>
-
-        <!-- NUEVOS CAMPOS MOSTRADOS -->
-        <div><strong>Dispositivo actual:</strong> ${data.dispositivoActual || "—"}</div>
-        <div><strong># Dispositivos:</strong> ${cantidadMostrar}</div>
-        <div><strong>Inicio contrato:</strong> ${data.fechaInicio || "—"}</div>
-        <div><strong>Término contrato:</strong> ${data.fechaTermino || "—"}</div>
-        <!-- FIN nuevos campos -->
-
         <div><strong>Rol:</strong> <span class="badge badge-${rol}">${rol}</span></div>
         <div><strong>Estado:</strong> <span style="color:${estadoColor}; font-weight:bold">${estadoTexto}</span></div>
 
@@ -381,51 +312,25 @@ export function showDatoDelUsuario() {
     document.querySelectorAll(".btn-edit").forEach((btn) =>
       btn.addEventListener("click", async () => {
         const id = btn.dataset.id;
-
-        // seguridad: si soy usuario normal no puedo editar otro usuario
-        if (currentUserRole === "usuario" && id !== currentUid) {
-          return alert("❌ No tienes permiso para editar a este usuario.");
-        }
-
         const ref = doc(firestore, "users", id);
-        try {
-          const snap = await getDoc(ref);
-          if (!snap.exists()) return alert("❌ Usuario no encontrado.");
-          const data = snap.data();
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const data = snap.data();
 
-          uid.value = id;
-          nombre.value = data.nombre || "";
-          email.value = data.email || "";
-          telefono.value = data.telefono || "";
-          cargo.value = data.cargo || "";
-          empresa.value = data.empresa || "";
+        uid.value = id;
+        nombre.value = data.nombre || "";
+        email.value = data.email || "";
+        telefono.value = data.telefono || "";
+        cargo.value = data.cargo || "";
+        empresa.value = data.empresa || "";
 
-          dispositivoActual.value = data.dispositivoActual || "";
-
-          // 🔥 CORREGIDO: lectura segura del campo
-          const cantidadFromDoc = data.cantidadDispositivos ?? data.cantidadDispositos ?? 0;
-          cantidadDispositivos.value = Number(cantidadFromDoc) || 0;
-
-          fechaInicio.value = data.fechaInicio || "";
-          fechaTermino.value = data.fechaTermino || "";
-
-          if (currentUserRole === "superAdmin") {
-            tipoUsuario.value = data.isSuperUser ? "superAdmin" : data.isAdmin ? "admin" : "usuario";
-            roleRow.style.display = "block";
-          } else {
-            // admin no puede elevar a superAdmin via UI; usuario no puede ver
-            tipoUsuario.value = "usuario";
-            roleRow.style.display = currentUserRole === "admin" ? "block" : "none";
-          }
-
-          // si el formulario muestra el email y eres usuario normal, mantenerlo disabled
-          email.disabled = currentUserRole === "usuario";
-
-          userActual = id;
-        } catch (err) {
-          console.error("Error cargando usuario:", err);
-          alert("❌ Error al cargar datos del usuario.");
+        if (currentUserRole === "superAdmin") {
+          tipoUsuario.value = data.isSuperUser ? "superAdmin" : data.isAdmin ? "admin" : "usuario";
+        } else if (currentUserRole === "admin") {
+          tipoUsuario.value = "usuario";
         }
+
+        userActual = id;
       })
     );
 
@@ -435,40 +340,28 @@ export function showDatoDelUsuario() {
     document.querySelectorAll(".btn-toggle").forEach((btn) =>
       btn.addEventListener("click", async () => {
         const id = btn.dataset.id;
-
-        // seguridad: solo admin/superAdmin pueden togglear
-        if (currentUserRole !== "superAdmin" && currentUserRole !== "admin") {
-          return alert("❌ No tienes permiso para cambiar estado.");
-        }
-
         const ref = doc(firestore, "users", id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const nuevoEstado = !data.isActive;
+
+        await updateDoc(ref, { isActive: nuevoEstado, updatedAt: new Date().toISOString() });
+
         try {
-          const snap = await getDoc(ref);
-          if (!snap.exists()) return alert("❌ Usuario no encontrado.");
-          const data = snap.data();
-          const nuevoEstado = !data.isActive;
-
-          await updateDoc(ref, { isActive: nuevoEstado, updatedAt: new Date().toISOString() });
-
-          try {
-            await rtdbUpdate(rtdbRef(rtdb, `/usuarios/${id}`), { isActive: nuevoEstado, updatedAt: Date.now() });
-          } catch (e) {
-            // Si falla el update, crear/establecer nodo
-            await rtdbSet(rtdbRef(rtdb, `/usuarios/${id}`), {
-              email: data.email || "",
-              nombre: data.nombre || "",
-              telefono: data.telefono || "",
-              empresa: data.empresa || "",
-              isActive: nuevoEstado,
-              updatedAt: Date.now(),
-            });
-          }
-
-          alert(`✔ Usuario ${nuevoEstado ? "activado" : "desactivado"} correctamente.`);
-        } catch (err) {
-          console.error("Error toggle isActive:", err);
-          alert("❌ Error cambiando estado del usuario.");
+          await rtdbUpdate(rtdbRef(rtdb, `/usuarios/${id}`), { isActive: nuevoEstado, updatedAt: Date.now() });
+        } catch {
+          await rtdbSet(rtdbRef(rtdb, `/usuarios/${id}`), {
+            email: data.email || "",
+            nombre: data.nombre || "",
+            telefono: data.telefono || "",
+            empresa: data.empresa || "",
+            isActive: nuevoEstado,
+            updatedAt: Date.now(),
+          });
         }
+
+        alert(`✔ Usuario ${nuevoEstado ? "activado" : "desactivado"} correctamente.`);
       })
     );
 
@@ -481,16 +374,8 @@ export function showDatoDelUsuario() {
         if (!confirm("¿Eliminar este usuario definitivamente?")) return;
 
         const id = btn.dataset.id;
-        try {
-          await deleteDoc(doc(firestore, "users", id));
-        } catch (e) {
-          console.error(e);
-        }
-        try {
-          await rtdbRemove(rtdbRef(rtdb, `/usuarios/${id}`));
-        } catch (e) {
-          console.error(e);
-        }
+        try { await deleteDoc(doc(firestore, "users", id)); } catch (e) { console.error(e); }
+        try { await rtdbRemove(rtdbRef(rtdb, `/usuarios/${id}`)); } catch (e) { console.error(e); }
         alert("✅ Usuario eliminado de Firestore y Realtime DB (Auth no puede borrarse desde cliente).");
       })
     );
@@ -502,19 +387,13 @@ export function showDatoDelUsuario() {
   form.onsubmit = async (e) => {
     e.preventDefault();
 
-    // permisos: solo superAdmin/admin o el propio usuario pueden guardar
-    const allowed =
-      currentUserRole === "superAdmin" ||
-      currentUserRole === "admin" ||
-      (currentUserRole === "usuario" && userActual === currentUid);
+    const allowed = currentUserRole === "superAdmin" || currentUserRole === "admin" || (currentUserRole === "usuario" && userActual === currentUid);
+    if (!allowed) return alert("❌ No tienes permiso para editar.");
 
-    if (!allowed) return alert("❌ No tienes permiso para guardar/editar.");
-
-    // Roles: solo superAdmin puede asignar superAdmin
+    // Roles
     let roleToSave = "usuario";
     if (currentUserRole === "superAdmin") roleToSave = tipoUsuario.value || "usuario";
-    else if (currentUserRole === "admin") roleToSave = "usuario";
-    else roleToSave = "usuario";
+    if (currentUserRole === "admin") roleToSave = "usuario";
 
     const superAdminExists = await existeSuperAdmin();
     if (roleToSave === "superAdmin" && superAdminExists) {
@@ -528,70 +407,23 @@ export function showDatoDelUsuario() {
       tipoUsuario: roleToSave,
     };
 
-    // Opción híbrida (C):
-    // - Si se está editando userActual -> usar ese ID (puede ser uid real o sanitizeId previo)
-    // - Si es nuevo (solo admin/superAdmin puede crear) -> crear id basado en email (sanitizeId)
-    let docId;
-    if (userActual) {
-      docId = userActual;
-    } else {
-      // Si un usuario normal intenta crear -> bloquear
-      if (currentUserRole === "usuario") {
-        return alert("❌ No puedes crear nuevos usuarios.");
-      }
-      docId = sanitizeId(email.value);
-    }
+    const docId = userActual ? userActual : sanitizeId(email.value);
     const docRef = doc(firestore, "users", docId);
 
-    // Si quien edita es usuario normal, forzamos docId = currentUid para evitar crear docs con sanitizeId cuando el usuario se autenticó con Auth
-    if (currentUserRole === "usuario") docId = currentUid;
-
-    // Normalizar números
-    const cantidadParsed = Number(cantidadDispositivos.value);
-    const cantidadToSave = Number.isNaN(cantidadParsed) ? 0 : cantidadParsed;
-
-    // Validación simple de fechas: si ambas existen, fechaInicio <= fechaTermino
-    if (fechaInicio.value && fechaTermino.value) {
-      const fi = new Date(fechaInicio.value);
-      const ft = new Date(fechaTermino.value);
-      if (fi > ft) {
-        if (!confirm("La fecha de inicio es posterior a la fecha término. ¿Deseas continuar?")) {
-          return;
-        }
-      }
-    }
-
-    // Construir payload
     const payload = {
       nombre: nombre.value.trim(),
-      // seguridad: si es usuario normal no permitimos cambiar email desde UI (ya disabled),
-      // pero por seguridad aquí forzamos email a email actual si usuario normal
-      email: currentUserRole === "usuario" ? (auth.currentUser ? auth.currentUser.email : email.value.trim()) : email.value.trim(),
+      email: email.value.trim(),
       telefono: telefono.value.trim(),
       cargo: cargo.value.trim(),
       empresa: empresa.value.trim(),
-
-      // Nuevos campos
-      dispositivoActual: dispositivoActual.value.trim(),
-      cantidadDispositivos: cantidadToSave,
-      fechaInicio: fechaInicio.value || "",
-      fechaTermino: fechaTermino.value || "",
-
       updatedAt: new Date().toISOString(),
       isActive: true,
       ...rolePayload,
     };
 
-    // Si currentUserRole no es superAdmin, impedir isSuperUser = true (doble chequeo)
-    if (currentUserRole !== "superAdmin") {
-      payload.isSuperUser = false;
-    }
+    await setDoc(docRef, payload, { merge: true });
 
     try {
-      // Guardar en Firestore (merge)
-      await setDoc(docRef, payload, { merge: true });
-
-      // Sincronizar con Realtime DB
       const rtdbPath = `/usuarios/${docId}`;
       await rtdbSet(rtdbRef(rtdb, rtdbPath), {
         id: docId,
@@ -600,48 +432,38 @@ export function showDatoDelUsuario() {
         telefono: payload.telefono,
         cargo: payload.cargo,
         empresa: payload.empresa,
-
-        dispositivoActual: payload.dispositivoActual,
-        cantidadDispositivos: payload.cantidadDispositivos,
-        fechaInicio: payload.fechaInicio,
-        fechaTermino: payload.fechaTermino,
-
         tipoUsuario: payload.tipoUsuario,
         isAdmin: payload.isAdmin || false,
         isSuperUser: payload.isSuperUser || false,
         isActive: payload.isActive,
         updatedAt: Date.now(),
       });
-
-      // Cambio de contraseña (solo si se edita el propio usuario autenticado)
-      const currentPass = currentPassword.value;
-      const newPass = newPassword.value;
-
-      if (currentPass && newPass && auth.currentUser && auth.currentUser.uid === currentUid) {
-        try {
-          const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
-          await reauthenticateWithCredential(auth.currentUser, credential);
-          if (newPass.length < 6) throw new Error("La nueva contraseña debe tener al menos 6 caracteres.");
-          await updatePassword(auth.currentUser, newPass);
-          alert("🔒 Contraseña actualizada correctamente.");
-        } catch (err) {
-          console.error("Error cambiando contraseña:", err);
-          alert("❌ Error al actualizar contraseña. Verifica la contraseña actual.");
-        }
-      }
-
-      alert("✅ Datos guardados correctamente (Firestore + Realtime DB).");
-    } catch (err) {
-      console.error("Error guardando usuario:", err);
-      alert("❌ Error al guardar datos. Revisa la consola.");
+    } catch {
+      alert("⚠️ Usuario guardado en Firestore, pero hubo problema al sincronizar con Realtime DB.");
     }
 
-    // Reset formulario
+    // CAMBIO DE CONTRASEÑA
+    const currentPass = currentPassword.value;
+    const newPass = newPassword.value;
+
+    if (currentPass && newPass && auth.currentUser.uid === currentUid) {
+      try {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await updatePassword(auth.currentUser, newPass);
+        alert("🔒 Contraseña actualizada correctamente.");
+      } catch (err) {
+        console.error("Error cambiando contraseña:", err);
+        alert("❌ Error al actualizar contraseña. Verifica la contraseña actual.");
+      }
+    }
+
+    alert("✅ Datos guardados correctamente (Firestore + Realtime DB).");
+
     form.reset();
     uid.value = "";
     userActual = null;
     tipoUsuario.value = "usuario";
-    email.disabled = currentUserRole === "usuario";
   };
 
   // =====================================================
@@ -653,7 +475,6 @@ export function showDatoDelUsuario() {
     uid.value = "";
     userActual = null;
     tipoUsuario.value = "usuario";
-    email.disabled = false;
   };
 
   // =====================================================
@@ -664,17 +485,31 @@ export function showDatoDelUsuario() {
   });
 
   document.getElementById("toggleTheme").onclick = () => document.body.classList.toggle("dark-mode");
-  document.getElementById("logoutBtn").onclick = async () => {
-    await signOut(auth);
-    navigate("login");
-  };
+  document.getElementById("logoutBtn").onclick = async () => { await signOut(auth); navigate("login"); };
   document.getElementById("backBtn").onclick = () => navigate("user");
 }
 
+
 /*
-  NOTAS:
-  - En este archivo aplicamos controles en UI y en cliente; recuerda también asegurar
-    reglas de seguridad en Firestore (security rules) para evitar que clientes editen lo que no deben.
-  - Usuarios creados con sanitizeId no existen en Firebase Auth: para que puedan autenticarse
-    debes crearlos usando Admin SDK / Cloud Function (recomendado).
+  NOTAS IMPORTANTES SOBRE AUTH (crear usuarios en Firebase Auth)
+  ------------------------------------------------------------
+  - Por seguridad la eliminación de usuarios en Firebase Auth NO se puede
+    ejecutar desde cliente (solo Admin SDK o Cloud Function con credenciales).
+  - También crear usuarios en Auth desde cliente con createUserWithEmailAndPassword
+    "inicia sesión" como ese nuevo usuario (rompe sesión del admin), por eso NO
+    es recomendable hacerlo directamente desde la app principal.
+  - Recomendación: implementar una Cloud Function o endpoint protegido (Admin SDK)
+    que el SuperAdmin pueda invocar (por ejemplo con un token de servidor) para:
+      * crear usuario en Auth
+      * eliminar usuario en Auth (si es necesario)
+    Ejemplo de payload que tu función admin esperaría:
+      { email, password, displayName, phoneNumber, customClaims }
+
+  EJEMPLO (pseudo) de llamada a tu Cloud Function (debes implementar la función):
+  async function createAuthUserServer(payload) {
+    // fetch('https://us-central1-TU_PROYECTO.cloudfunctions.net/createUser', { method: 'POST', body: JSON.stringify(payload), headers: { 'Authorization': 'Bearer ...' }})
+  }
+
+  - Si quieres que implemente el código del endpoint (Cloud Function) para crear usuarios
+    en Auth de forma segura, dímelo y preparo el ejemplo (Node.js Admin SDK).
 */

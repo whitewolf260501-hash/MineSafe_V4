@@ -1,37 +1,10 @@
 // firebaseConfig.js
-
-// --- Firebase Core ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, get, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFunctions } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
-// --- Realtime Database ---
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  remove,
-  get,
-  update
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
-// --- Authentication ---
-import {
-  getAuth,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-// --- Firestore ---
-import {
-  getFirestore
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-// --- Cloud Functions ---
-import {
-  getFunctions
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
-
-
-// --- CONFIGURACIÓN DEL PROYECTO ---
 const firebaseConfig = {
   apiKey: "AIzaSyD744Q06qmoq3u8R43p-sgfa60xBRztOs4",
   authDomain: "minefase-fc5f5.firebaseapp.com",
@@ -43,23 +16,14 @@ const firebaseConfig = {
   measurementId: "G-Z6VB2Y3SN7",
 };
 
-
-// --- Inicializar App ---
+// Inicializar app
 export const app = initializeApp(firebaseConfig);
 
-// --- Inicializar Servicios ---
+// Servicios
 export const db = getDatabase(app);
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
 export const functions = getFunctions(app);
 
-// --- Exportar funciones útiles ---
-export {
-  ref,
-  onValue,
-  set,
-  remove,
-  get,
-  update,
-  onAuthStateChanged
-};
+// Re-exportar funciones útiles
+export { ref, onValue, set, remove, get, update, onAuthStateChanged };
