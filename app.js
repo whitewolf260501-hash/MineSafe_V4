@@ -25,24 +25,41 @@ import { showContractManager } from "./views/ContractManager.js";
 import { showUserContracts } from "./views/UserContracts.js";
 import { showContractPayments } from "./views/ContractPayments.js";
 import { showDeviceRentStatus } from "./views/DeviceRentStatus.js";
+
 import { showDatoDelUsuario } from "./components/DatoDelUsuario.js";
 
 let showAllDevicesFunc = null;
-try {
-  const module = await import("./components/deviceHistory.js");
-  showAllDevicesFunc = module.showAllDevices;
-} catch (error) {
-  console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
+const root = document.getElementById("root");
+
+async function initApp() {
+  // Importación dinámica de historial de dispositivos
+  try {
+    const module = await import("./components/deviceHistory.js");
+    showAllDevicesFunc = module.showAllDevices;
+  } catch (error) {
+    console.warn("⚠️ No se pudo cargar deviceHistory.js:", error);
+  }
+
+  // Manejo de autenticación
+  onAuthStateChanged(auth, (user) => {
+    const status = document.getElementById("userStatus");
+    if (user) {
+      if (status) status.textContent = `Bienvenido, ${user.email}`;
+      navigate("user", { nombre: user.displayName, email: user.email });
+    } else {
+      if (status) status.textContent = "";
+      navigate("login");
+    }
+  });
 }
 
-const root = document.getElementById("root");
-const header = document.querySelector("header");
-
 // ==================== FUNCIÓN DE NAVEGACIÓN ====================
-export function navigate(view) {
+export function navigate(view, userData = null) {
   root.innerHTML = "";
 
-  // Login, Registro y Recuperar → sin navbar
+  const header = document.querySelector("header");
+
+  // Login, Registro y Recuperar → mostrar header
   if (["login", "register", "recoverPassword"].includes(view)) {
     if (header) header.style.display = "flex";
     if (view === "login") showLogin();
@@ -51,7 +68,7 @@ export function navigate(view) {
     return;
   }
 
-  // Dashboard y demás vistas → ocultar header y renderizar navbar
+  // Oculta header y muestra navbar
   if (header) header.style.display = "none";
   const navbar = renderNavbar();
   root.appendChild(navbar);
@@ -60,8 +77,11 @@ export function navigate(view) {
   content.className = "page-content";
   root.appendChild(content);
 
+  // ============================================
+  // Selección de vistas
+  // ============================================
   switch (view) {
-    case "user": showUserDashboard(); break;
+    case "user": showUserDashboard(userData); break;
     case "admin": showAdminDashboard(); break;
     case "alerts": showAlerts(); break;
     case "devices": showDevices(); break;
@@ -70,8 +90,8 @@ export function navigate(view) {
     case "geoempresa": showGeoEmpresaForm(); break;
 
     // Nuevas vistas de arriendos/contratos
-    case "contractManager": showContractManager(); break;
-    case "userContracts": showUserContracts(); break;
+    case "contractsAdmin": showContractManager(); break;
+    case "myContracts": showUserContracts(); break;
     case "contractPayments": showContractPayments(); break;
     case "deviceRentStatus": showDeviceRentStatus(); break;
 
@@ -97,15 +117,5 @@ export function navigate(view) {
   }
 }
 
-// ==================== AUTENTICACIÓN ====================
-onAuthStateChanged(auth, (user) => {
-  const status = document.getElementById("userStatus");
-
-  if (user) {
-    if (status) status.textContent = `Bienvenido, ${user.email}`;
-    navigate("user"); // Muestra dashboard si está autenticado
-  } else {
-    if (status) status.textContent = "Usuario no autenticado";
-    navigate("login"); // Muestra login si no hay usuario
-  }
-});
+// ==================== INICIALIZAR APLICACIÓN ====================
+initApp();
